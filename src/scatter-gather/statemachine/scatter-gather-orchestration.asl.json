@@ -1,0 +1,53 @@
+{
+  "Comment": "A description of my state machine",
+  "StartAt": "BroadcastRequest",
+  "States": {
+    "BroadcastRequest": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::events:putEvents",
+      "Parameters": {
+        "Entries": [
+          {
+            "Detail": {
+              "CustomerId.$": "$.CustomerId",
+              "LoanAmount.$": "$.LoanAmount",
+              "CorrelationId.$": "$.CorrelationId"
+            },
+            "DetailType": "com.broken.request-loan-offers",
+            "EventBusName": "application-integration-bus",
+            "Source": "com.loanbroker"
+          }
+        ]
+      },
+      "ResultPath": null,
+      "Next": "WaitForResponses"
+    },
+    "WaitForResponses": {
+      "Type": "Wait",
+      "Seconds": 10,
+      "Next": "Aggregator"  
+    },
+    "Aggregator": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "OutputPath": "$.Payload",
+      "Parameters": {
+        "Payload.$": "$",
+        "FunctionName": "{{AGGREGATOR_FUNCTION_ARN}}:$LATEST"
+      },
+      "Retry": [
+        {
+          "ErrorEquals": [
+            "Lambda.ServiceException",
+            "Lambda.AWSLambdaException",
+            "Lambda.SdkClientException"
+          ],
+          "IntervalSeconds": 2,
+          "MaxAttempts": 6,
+          "BackoffRate": 2
+        }
+      ],
+      "End": true
+    }
+  }
+}
