@@ -1,4 +1,4 @@
 output "function_arn" {
-  value       =  aws_lambda_function.vendor_loan_quote_generator.arn
-  description = "The arn of the lambda function group"
+  value       =  module.lambda_vendor_loan_quote_generator.function_arn
+  description = "The arn of the lambda function"
 } 

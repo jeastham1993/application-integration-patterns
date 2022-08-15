@@ -1,21 +1,22 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 16
-VisualStudioVersion = 16.0.30114.105
+# Visual Studio Version 17
+VisualStudioVersion = 17.3.32804.467
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VendorLoanQuoteGenerator", "VendorLoanQuoteGenerator\VendorLoanQuoteGenerator.csproj", "{83A7ECCA-E826-4CE1-8CA9-989E6093CAE8}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "VendorLoanQuoteGenerator", "VendorLoanQuoteGenerator\VendorLoanQuoteGenerator.csproj", "{83A7ECCA-E826-4CE1-8CA9-989E6093CAE8}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Aggregator", "Aggregator\Aggregator.csproj", "{D4492CBE-F1A4-42D7-95EE-713C2A90A327}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Aggregator", "Aggregator\Aggregator.csproj", "{D4492CBE-F1A4-42D7-95EE-713C2A90A327}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VendorLoanQuoteResponseHandler", "VendorLoanQuoteResponseHandler\VendorLoanQuoteResponseHandler.csproj", "{5EA3BB03-B27B-4EC1-BA75-E417FFCD4D7E}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "VendorLoanQuoteResponseHandler", "VendorLoanQuoteResponseHandler\VendorLoanQuoteResponseHandler.csproj", "{5EA3BB03-B27B-4EC1-BA75-E417FFCD4D7E}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ScatterGather.IntegrationTest", "..\tests\ScatterGather.IntegrationTest\ScatterGather.IntegrationTest.csproj", "{CC6CC6C6-68BF-4AF0-9AFD-A1902E86701F}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{6D223F99-8CEC-4BF7-8127-959EF9A85E22}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
 		Release|Any CPU = Release|Any CPU
-	EndGlobalSection
-	GlobalSection(SolutionProperties) = preSolution
-		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{83A7ECCA-E826-4CE1-8CA9-989E6093CAE8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
@@ -30,5 +31,18 @@ Global
 		{5EA3BB03-B27B-4EC1-BA75-E417FFCD4D7E}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{5EA3BB03-B27B-4EC1-BA75-E417FFCD4D7E}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{5EA3BB03-B27B-4EC1-BA75-E417FFCD4D7E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{CC6CC6C6-68BF-4AF0-9AFD-A1902E86701F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CC6CC6C6-68BF-4AF0-9AFD-A1902E86701F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CC6CC6C6-68BF-4AF0-9AFD-A1902E86701F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CC6CC6C6-68BF-4AF0-9AFD-A1902E86701F}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{CC6CC6C6-68BF-4AF0-9AFD-A1902E86701F} = {6D223F99-8CEC-4BF7-8127-959EF9A85E22}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {95A02E95-3E54-4CB7-9A6D-78D0F4A6EDE5}
 	EndGlobalSection
 EndGlobal

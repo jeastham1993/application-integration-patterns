@@ -17,3 +17,8 @@ variable "event_bridge_name" {
   description = "The name of the event bridge to publish to"
   type        = string
 }
+
+variable "event_bridge_put_events_policy_arn" {
+  description = "The arn of the event bridge put events policy"
+  type        = string
+}
