@@ -24,6 +24,12 @@ An implementation of the scatter gather pattern using an aggregator to combine r
 
 4. After a pre-defined wait period, the Step Function workflow continues. A Lambda is invoked to aggregate the results from the DynamoDB table and return the final combined list of loan offers.
 
+### [Synchronous API](./src/synchronous-api/)
+
+Implementation of a simple REST API that allows the creation and retrieval of products.
+
+![](./assets/patterns-synchronous-api.png)
+
 ## Pattern Roadmap
 
 - [Request-Reply](https://www.enterpriseintegrationpatterns.com/RequestReply.html)
