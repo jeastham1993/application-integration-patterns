@@ -24,6 +24,13 @@ An implementation of the scatter gather pattern using an aggregator to combine r
 
 4. After a pre-defined wait period, the Step Function workflow continues. A Lambda is invoked to aggregate the results from the DynamoDB table and return the final combined list of loan offers.
 
+### [Pub/Sub](./src/pub-sub/)
+
+An implementation of the publish/subscribe pattern, using both Amazon Event Bridge and AWS SNS as the message channel.
+
+![](./assets/patterns-pub-sub.png)
+
+
 ### [Synchronous API](./src/synchronous-api/)
 
 Implementation of a simple REST API that allows the creation and retrieval of products.
