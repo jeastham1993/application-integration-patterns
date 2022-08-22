@@ -1,0 +1,53 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.3.32804.467
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EventBridgePublisher", "EventBridgePublisher\EventBridgePublisher.csproj", "{3CB100F7-08CF-43D0-8175-C1C8CC8367A9}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EventBridgeSubscriber", "EventBridgeSubscriber\EventBridgeSubscriber.csproj", "{CFFF422E-6D21-446B-BDC0-C8C45998D2A0}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "EventBridge", "EventBridge", "{81C3BF6A-1053-4D2D-96FB-4E6B591F3409}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "SNS", "SNS", "{EC68D6F8-BEDE-4B41-B461-17E0C082EDB8}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SNSPublisher", "SNSPublisher\SNSPublisher.csproj", "{89FB8B79-ABC6-45EF-8B6D-793E9425C949}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SNSSubscriber", "SNSSubscriber\SNSSubscriber.csproj", "{837B1059-A384-4F0D-AC1C-72B1A348AEB4}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{3CB100F7-08CF-43D0-8175-C1C8CC8367A9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3CB100F7-08CF-43D0-8175-C1C8CC8367A9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3CB100F7-08CF-43D0-8175-C1C8CC8367A9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3CB100F7-08CF-43D0-8175-C1C8CC8367A9}.Release|Any CPU.Build.0 = Release|Any CPU
+		{CFFF422E-6D21-446B-BDC0-C8C45998D2A0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CFFF422E-6D21-446B-BDC0-C8C45998D2A0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CFFF422E-6D21-446B-BDC0-C8C45998D2A0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CFFF422E-6D21-446B-BDC0-C8C45998D2A0}.Release|Any CPU.Build.0 = Release|Any CPU
+		{89FB8B79-ABC6-45EF-8B6D-793E9425C949}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{89FB8B79-ABC6-45EF-8B6D-793E9425C949}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{89FB8B79-ABC6-45EF-8B6D-793E9425C949}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{89FB8B79-ABC6-45EF-8B6D-793E9425C949}.Release|Any CPU.Build.0 = Release|Any CPU
+		{837B1059-A384-4F0D-AC1C-72B1A348AEB4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{837B1059-A384-4F0D-AC1C-72B1A348AEB4}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{837B1059-A384-4F0D-AC1C-72B1A348AEB4}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{837B1059-A384-4F0D-AC1C-72B1A348AEB4}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{3CB100F7-08CF-43D0-8175-C1C8CC8367A9} = {81C3BF6A-1053-4D2D-96FB-4E6B591F3409}
+		{CFFF422E-6D21-446B-BDC0-C8C45998D2A0} = {81C3BF6A-1053-4D2D-96FB-4E6B591F3409}
+		{89FB8B79-ABC6-45EF-8B6D-793E9425C949} = {EC68D6F8-BEDE-4B41-B461-17E0C082EDB8}
+		{837B1059-A384-4F0D-AC1C-72B1A348AEB4} = {EC68D6F8-BEDE-4B41-B461-17E0C082EDB8}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {FD1CF4CC-DC89-409C-BE3F-8B1042759197}
+	EndGlobalSection
+EndGlobal
