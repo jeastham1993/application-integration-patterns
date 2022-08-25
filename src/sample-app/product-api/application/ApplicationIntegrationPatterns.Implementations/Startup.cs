@@ -8,7 +8,7 @@ using ApplicationIntegrationPatterns.Core.Services;
 using ApplicationIntegrationPatterns.Implementations;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace HelloWorld;
+namespace ApplicationIntegrationPatterns.Implementations;
 
 public static class Startup
 {

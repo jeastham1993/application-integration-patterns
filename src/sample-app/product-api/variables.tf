@@ -9,3 +9,9 @@ variable "code_bucket_name" {
   type        = string
   default = "synchronous-api-source-code-bucket"
 }
+
+variable "environment" {
+  description = "The current environment"
+  type        = string
+  default = "dev"
+}

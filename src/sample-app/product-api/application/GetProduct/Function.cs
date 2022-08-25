@@ -3,41 +3,39 @@ using System.Threading.Tasks;
 using System.Text.Json;
 using Amazon.Lambda.Core;
 using Amazon.Lambda.APIGatewayEvents;
-using ApplicationIntegrationPatterns.Core.Command;
-using HelloWorld;
+using ApplicationIntegrationPatterns.Core.Queries;
 using Microsoft.Extensions.DependencyInjection;
 using ApplicationIntegrationPatterns.Core.Services;
-using ApplicationIntegrationPatterns.Implementations;
+using Amazon.XRay.Recorder.Core;
 using AWS.Lambda.Powertools.Tracing;
 using AWS.Lambda.Powertools.Metrics;
+using ApplicationIntegrationPatterns.Implementations;
 
-namespace CreateProduct
+namespace GetProduct
 {
     public class Function
     {
-        private readonly CreateProductCommandHandler _handler;
+        private readonly GetProductQueryHandler _queryHandler;
         private readonly ILoggingService _loggingService;
 
         public Function() : this(null, null)
         {
         }
 
-        internal Function(CreateProductCommandHandler handler = null, ILoggingService loggingService = null)
+        internal Function(GetProductQueryHandler handler = null, ILoggingService loggingService = null)
         {
             Startup.ConfigureServices();
             
-            this._handler = handler ?? Startup.Services.GetRequiredService<CreateProductCommandHandler>();
+            this._queryHandler = handler ?? Startup.Services.GetRequiredService<GetProductQueryHandler>();
             this._loggingService = loggingService ?? Startup.Services.GetRequiredService<ILoggingService>();
         }
 
         [Tracing]
-        [Metrics(CaptureColdStart =true)]
+        [Metrics(CaptureColdStart = true)]
         public async Task<APIGatewayProxyResponse> FunctionHandler(APIGatewayProxyRequest apigProxyEvent, ILambdaContext context)
         {
-            if (apigProxyEvent.HttpMethod != "POST" || string.IsNullOrEmpty(apigProxyEvent.Body))
+            if (apigProxyEvent.HttpMethod != "GET" || apigProxyEvent.PathParameters.ContainsKey("productId") == false)
             {
-                this._loggingService.LogWarning("Request received that isn't a POST request, returning error");
-
                 return new APIGatewayProxyResponse
                 {
                     StatusCode = 400,
@@ -45,12 +43,19 @@ namespace CreateProduct
                 };
             }
 
-            this._loggingService.LogInfo("Received request to create product");
-
             var product =
-                await this._handler.Handle(JsonSerializer.Deserialize<CreateProductCommand>(apigProxyEvent.Body));
+                await this._queryHandler.Execute(new GetProductQuery(apigProxyEvent.PathParameters["productId"]));
 
-            MetricService.IncrementMetric("ProductCreated", 1);
+            if (product == null)
+            {
+                
+                return new APIGatewayProxyResponse
+                {
+                    Body = "{\"message\": \"Product not found\"}",
+                    StatusCode = 404,
+                    Headers = new Dictionary<string, string> { { "Content-Type", "application/json" } }
+                };
+            }
 
             return new APIGatewayProxyResponse
             {

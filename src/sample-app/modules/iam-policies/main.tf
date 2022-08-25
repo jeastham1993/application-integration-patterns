@@ -16,3 +16,15 @@ resource "aws_iam_policy" "cloud_watch_put_metrics" {
   path   = "/"
   policy = data.aws_iam_policy_document.cloud_watch_put_metrics.json
 }
+
+resource "aws_iam_policy" "dynamo_db_stream_read_policy" {
+  name   = "dynamo_db_stream_read_policy"
+  path   = "/"
+  policy = data.aws_iam_policy_document.allow_dynamo_db_streams.json
+}
+
+resource "aws_iam_policy" "sns_publish_message" {
+  name   = "sns_publish_message_policy"
+  path   = "/"
+  policy = data.aws_iam_policy_document.sns_publish_policy.json
+}

@@ -2,6 +2,8 @@ resource "aws_dynamodb_table" "synchornous_api_table" {
   name           = var.table_name
   billing_mode   = "PAY_PER_REQUEST"
   hash_key       = "PK"
+  stream_enabled = true
+  stream_view_type = "NEW_AND_OLD_IMAGES"
 
   attribute {
     name = "PK"
@@ -19,13 +21,13 @@ resource "aws_s3_bucket" "lambda_bucket" {
 
 # Initialize module containing IAM policies.
 module "iam_policies" {
-  source = "./modules/iam-policies"
+  source = "../modules/iam-policies"
   table_name = aws_dynamodb_table.synchornous_api_table.name
 }
 
 # Create Product Lambda
 module "create_product_lambda" {
-  source = "./modules/lambda-function"
+  source = "../modules/lambda-function"
   lambda_bucket_id = aws_s3_bucket.lambda_bucket.id
   publish_dir = "${path.module}/application/CreateProduct/bin/Release/net6.0/linux-x64/publish"
   zip_file = "CreateProduct.zip"
@@ -39,7 +41,7 @@ module "create_product_lambda" {
 }
 
 module "create_product_lambda_api" {
-  source = "./modules/api-gateway-lambda-integration"
+  source = "../modules/api-gateway-lambda-integration"
   api_id = module.api_gateway.api_id
   api_arn = module.api_gateway.api_arn
   function_arn = module.create_product_lambda.function_arn
@@ -58,9 +60,14 @@ resource "aws_iam_role_policy_attachment" "create_product_lambda_cw_metrics" {
   policy_arn = module.iam_policies.cloud_watch_put_metrics
 }
 
+resource "aws_iam_role_policy_attachment" "create_product_lambda_sns_publish" {
+  role       = module.create_product_lambda.function_role_name
+  policy_arn = module.iam_policies.sns_publish_message
+}
+
 # Get Product Lambda
 module "get_product_lambda" {
-  source = "./modules/lambda-function"
+  source = "../modules/lambda-function"
   lambda_bucket_id = aws_s3_bucket.lambda_bucket.id
   publish_dir = "${path.module}/application/GetProduct/bin/Release/net6.0/linux-x64/publish"
   zip_file = "GetProduct.zip"
@@ -74,7 +81,7 @@ module "get_product_lambda" {
 }
 
 module "get_product_lambda_api" {
-  source = "./modules/api-gateway-lambda-integration"
+  source = "../modules/api-gateway-lambda-integration"
   api_id = module.api_gateway.api_id
   api_arn = module.api_gateway.api_arn
   function_arn = module.get_product_lambda.function_arn
@@ -94,7 +101,7 @@ resource "aws_iam_role_policy_attachment" "get_product_lambda_cw_metrics" {
 }
 
 module "api_gateway" {
-  source = "./modules/api-gateway"
+  source = "../modules/api-gateway"
   api_name = "synchronous-api"
   stage_name = "dev"
   stage_auto_deploy = true

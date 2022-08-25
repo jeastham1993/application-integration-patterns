@@ -1,4 +1,5 @@
 ﻿using ApplicationIntegrationPatterns.Core.Models;
+using System.Text.Json;
 
 namespace ApplicationIntegrationPatterns.Core.DataTransfer;
 
@@ -27,4 +28,6 @@ public record ProductDTO
     public decimal CurrentPrice { get; private set; }
     
     public Dictionary<DateTime, decimal> PricingHistory { get; private set; }
+
+    public override string ToString() => JsonSerializer.Serialize(this);
 }
