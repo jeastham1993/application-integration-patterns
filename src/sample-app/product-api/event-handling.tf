@@ -27,6 +27,11 @@ resource "aws_iam_role_policy_attachment" "dynamo_db_stream_handler_dynamo_db_re
   policy_arn = module.iam_policies.dynamo_db_read
 }
 
+resource "aws_iam_role_policy_attachment" "dynamo_db_stream_handler_sns_publish_message" {
+  role       = module.dynamo_db_stream_handler.function_role_name
+  policy_arn = module.iam_policies.sns_publish_message
+}
+
 resource "aws_iam_role_policy_attachment" "dynamo_db_stream_handler_cw_metrics" {
   role       = module.dynamo_db_stream_handler.function_role_name
   policy_arn = module.iam_policies.cloud_watch_put_metrics

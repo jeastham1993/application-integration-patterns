@@ -1,16 +1,15 @@
-# Contains logic for the purchase ordering system
-resource "aws_sqs_queue" "purchase_ordering_queue" {
-  name                      = "${var.environment}-purchase-order-queue"
+resource "aws_sqs_queue" "customer_service_product_notifications" {
+  name                      = "${var.environment}-customer-service-product-notification-queue"
 }
 
 resource "aws_sns_topic_subscription" "user_updates_sqs_target" {
   topic_arn = var.product_created_topic_arn
   protocol  = "sqs"
-  endpoint  = aws_sqs_queue.purchase_ordering_queue.arn
+  endpoint  = aws_sqs_queue.customer_service_product_notifications.arn
 }
 
 resource "aws_sqs_queue_policy" "results_updates_queue_policy" {
-    queue_url = "${aws_sqs_queue.purchase_ordering_queue.id}"
+    queue_url = "${aws_sqs_queue.customer_service_product_notifications.id}"
 
     policy = <<POLICY
 {
@@ -22,7 +21,7 @@ resource "aws_sqs_queue_policy" "results_updates_queue_policy" {
       "Effect": "Allow",
       "Principal": "*",
       "Action": "sqs:SendMessage",
-      "Resource": "${aws_sqs_queue.purchase_ordering_queue.arn}",
+      "Resource": "${aws_sqs_queue.customer_service_product_notifications.arn}",
       "Condition": {
         "ArnEquals": {
           "aws:SourceArn": "${var.product_created_topic_arn}"

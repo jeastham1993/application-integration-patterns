@@ -8,11 +8,17 @@ using AWS.Lambda.Powertools.Metrics;
 using Amazon.Lambda.DynamoDBEvents;
 using Amazon.SimpleNotificationService;
 using ApplicationIntegrationPatterns.Core.DataTransfer;
+using AWS.Lambda.Powertools.Logging;
+using Amazon.DynamoDBv2;
+using Amazon.DynamoDBv2.DocumentModel;
+using System;
 
 namespace DynamoDbStreamHandler
 {
     public class Function
     {
+        private static string TOPIC_ARN = Environment.GetEnvironmentVariable("PRODUCT_CREATED_TOPIC_ARN");
+
         private readonly ILoggingService _loggingService;
         private readonly AmazonSimpleNotificationServiceClient _snsClient;
 
@@ -25,22 +31,30 @@ namespace DynamoDbStreamHandler
             Startup.ConfigureServices();
             
             this._loggingService = loggingService ?? Startup.Services.GetRequiredService<ILoggingService>();
-            this._snsClient = snsClient;
+            this._snsClient = snsClient ?? new AmazonSimpleNotificationServiceClient();
         }
 
         [Tracing]
         [Metrics(CaptureColdStart =true)]
+        [Logging(LogEvent = true)]
         public async Task FunctionHandler(DynamoDBEvent dynamoStreamEvent, ILambdaContext context)
         {
             this._loggingService.LogInfo($"Received {dynamoStreamEvent.Records.Count} stream records to process");
 
             foreach (var evt in dynamoStreamEvent.Records)
             {
+                if (evt.EventName != OperationType.INSERT)
+                {
+                    continue;
+                }
+
                 this._loggingService.LogInfo($"Processing {evt.EventName}");
 
-                var newProduct = DynamoDbProductAdapter.DynamoDbItemToProduct(evt.Dynamodb.NewImage);
+                var recordAsDocument = Document.FromAttributeMap(evt.Dynamodb.NewImage);
 
-                await this._snsClient.PublishAsync("PRODUCT_CREATED_TOPIC_ARN", new ProductDTO(newProduct).ToString());
+                var newProduct = DynamoDbProductAdapter.DynamoDbItemToProduct(recordAsDocument.ToAttributeMap());
+
+                await this._snsClient.PublishAsync(TOPIC_ARN, new ProductDTO(newProduct).ToString());
             }
         }
     }

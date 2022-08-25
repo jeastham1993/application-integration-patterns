@@ -23,6 +23,7 @@ resource "aws_s3_bucket" "lambda_bucket" {
 module "iam_policies" {
   source = "../modules/iam-policies"
   table_name = aws_dynamodb_table.synchornous_api_table.name
+  topic_name = aws_sns_topic.product-created-topic.name
 }
 
 # Create Product Lambda
