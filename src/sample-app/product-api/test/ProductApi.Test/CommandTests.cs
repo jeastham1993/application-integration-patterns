@@ -1,5 +1,6 @@
 ﻿using System.Threading.Tasks;
 using ApplicationIntegrationPatterns.Core.Command;
+using ApplicationIntegrationPatterns.Core.DataTransfer;
 using ApplicationIntegrationPatterns.Core.Models;
 using ApplicationIntegrationPatterns.Core.Services;
 using FluentAssertions;
@@ -65,5 +66,76 @@ public class CommandTests
         });
         
         mockRepo.Verify(p => p.Create(It.IsAny<Product>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task UpdateProductCatalog_ShouldUpdateCatalogue()
+    {
+        var testProduct = Product.Create("Test product", 10);
+
+        var mockRepo = new Mock<IProductRepository>();
+        mockRepo.Setup(p => p.Get(It.IsAny<string>()))
+            .ReturnsAsync(testProduct)
+            .Verifiable();
+
+        var mockCatalogueService = new Mock<IProductCatalogueService>();
+        mockCatalogueService.Setup(p => p.UpdateProduct(It.IsAny<Product>())).Verifiable();
+
+        var handler = new UpdateProductCatalogueCommandHandler(mockRepo.Object, _mockLogger, mockCatalogueService.Object);
+
+        await handler.Handle(new UpdateProductCatalogueCommand()
+        {
+            Product = new ProductDTO(testProduct)
+        });
+
+        mockRepo.Verify(p => p.Get(testProduct.ProductId), Times.Once);
+        mockCatalogueService.Verify(p => p.UpdateProduct(It.IsAny<Product>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task UpdateProductCatalog_InvalidCommand_ShouldReturn()
+    {
+        var testProduct = Product.Create("Test product", 10);
+
+        var mockRepo = new Mock<IProductRepository>();
+        mockRepo.Setup(p => p.Get(It.IsAny<string>()))
+            .ReturnsAsync(testProduct)
+            .Verifiable();
+
+        var mockCatalogueService = new Mock<IProductCatalogueService>();
+        mockCatalogueService.Setup(p => p.UpdateProduct(It.IsAny<Product>())).Verifiable();
+
+        var handler = new UpdateProductCatalogueCommandHandler(mockRepo.Object, _mockLogger, mockCatalogueService.Object);
+
+        await handler.Handle(new UpdateProductCatalogueCommand()
+        {
+            Product = null
+        });
+
+        mockRepo.Verify(p => p.Get(testProduct.ProductId), Times.Never);
+        mockCatalogueService.Verify(p => p.UpdateProduct(It.IsAny<Product>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task UpdateProductCatalog_ProductNotFound_ShouldReturn()
+    {
+        var testProduct = Product.Create("Test product", 10);
+
+        var mockRepo = new Mock<IProductRepository>();
+        mockRepo.Setup(p => p.Get(It.IsAny<string>()))
+            .Verifiable();
+
+        var mockCatalogueService = new Mock<IProductCatalogueService>();
+        mockCatalogueService.Setup(p => p.UpdateProduct(It.IsAny<Product>())).Verifiable();
+
+        var handler = new UpdateProductCatalogueCommandHandler(mockRepo.Object, _mockLogger, mockCatalogueService.Object);
+
+        await handler.Handle(new UpdateProductCatalogueCommand()
+        {
+            Product = null
+        });
+
+        mockRepo.Verify(p => p.Get(testProduct.ProductId), Times.Never);
+        mockCatalogueService.Verify(p => p.UpdateProduct(It.IsAny<Product>()), Times.Never);
     }
 }

@@ -1,4 +1,5 @@
 using Amazon.DynamoDBv2;
+using Amazon.SimpleSystemsManagement;
 using Amazon.XRay.Recorder.Core;
 using Amazon.XRay.Recorder.Handlers.AwsSdk;
 using ApplicationIntegrationPatterns.Core.Command;
@@ -21,11 +22,15 @@ public static class Startup
         AWSSDKHandler.RegisterXRayForAllServices();
 
         serviceCollection.AddSingleton<ILoggingService, LoggingService>();
+        serviceCollection.AddSingleton<IProductCatalogueService, ProductCatalogueService>();
         serviceCollection.AddSingleton(new AmazonDynamoDBClient(new AmazonDynamoDBConfig()));
-        serviceCollection.AddTransient<IProductRepository, DynamoDbProductRepository>();
+        serviceCollection.AddSingleton(new AmazonSimpleSystemsManagementClient(new AmazonSimpleSystemsManagementConfig()));
+        serviceCollection.AddSingleton<SystemParameters>();
+        serviceCollection.AddSingleton<IProductRepository, DynamoDbProductRepository>();
         serviceCollection.AddSingleton<GetProductQueryHandler>();
         serviceCollection.AddSingleton<CreateProductCommandHandler>();
-        
+        serviceCollection.AddSingleton<UpdateProductCatalogueCommandHandler>();
+
         Services = serviceCollection.BuildServiceProvider();
     }
 }

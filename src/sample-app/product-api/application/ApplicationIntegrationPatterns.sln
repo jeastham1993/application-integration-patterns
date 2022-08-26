@@ -19,6 +19,10 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ProductApi.IntegrationTests
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DynamoDbStreamHandler", "DynamoDbStreamHandler\DynamoDbStreamHandler.csproj", "{F1F00959-F141-40F9-9E9A-B1EE6E03B6E9}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "UpdateProductCatalogue", "UpdateProductCatalogue\UpdateProductCatalogue.csproj", "{F1F00959-F141-40F9-9E9A-B1EE6E03B6E9}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ExternalEventPublisher", "ExternalEventPublisher\ExternalEventPublisher.csproj", "{F1F00959-F141-40F9-9E9A-B1EE6E03B6E9}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU

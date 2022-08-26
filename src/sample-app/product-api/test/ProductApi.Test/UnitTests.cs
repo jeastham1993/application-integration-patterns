@@ -1,7 +1,9 @@
 using System;
 using System.Linq;
+using System.Text.Json;
 using ApplicationIntegrationPatterns.Core.DataTransfer;
 using ApplicationIntegrationPatterns.Core.Models;
+using ApplicationIntegrationPatterns.Implementations.Models;
 using FluentAssertions;
 using Xunit;
 

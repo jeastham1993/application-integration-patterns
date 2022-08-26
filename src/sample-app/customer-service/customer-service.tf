@@ -1,30 +1,43 @@
 resource "aws_sqs_queue" "customer_service_product_notifications" {
-  name                      = "${var.environment}-customer-service-product-notification-queue"
+  name = "${var.environment}-customer-service-product-notification-queue"
 }
 
-resource "aws_sns_topic_subscription" "user_updates_sqs_target" {
-  topic_arn = var.product_created_topic_arn
-  protocol  = "sqs"
-  endpoint  = aws_sqs_queue.customer_service_product_notifications.arn
+# Create a new EventBridge Rule
+resource "aws_cloudwatch_event_rule" "product_created_event_rule" {
+  event_bus_name = "${var.environment}-application-integration-patterns-samples"
+  event_pattern  = <<PATTERN
+{
+  "source": ["product-api"],
+  "detail-type": ["product-created"]
+}
+PATTERN
 }
 
-resource "aws_sqs_queue_policy" "results_updates_queue_policy" {
-    queue_url = "${aws_sqs_queue.customer_service_product_notifications.id}"
+# Set the SQS as a target to the EventBridge Rule
+resource "aws_cloudwatch_event_target" "sqs-target" {
+  event_bus_name = "${var.environment}-application-integration-patterns-samples"
+  rule = aws_cloudwatch_event_rule.product_created_event_rule.name
+  arn  = aws_sqs_queue.customer_service_product_notifications.arn
+}
 
-    policy = <<POLICY
+# Allow the EventBridge to send messages to the SQS queue.
+resource "aws_sqs_queue_policy" "test" {
+  queue_url = aws_sqs_queue.customer_service_product_notifications.id
+  policy    = <<POLICY
 {
   "Version": "2012-10-17",
   "Id": "sqspolicy",
   "Statement": [
     {
-      "Sid": "First",
       "Effect": "Allow",
-      "Principal": "*",
+      "Principal": {
+        "Service": "events.amazonaws.com"
+      },
       "Action": "sqs:SendMessage",
       "Resource": "${aws_sqs_queue.customer_service_product_notifications.arn}",
       "Condition": {
         "ArnEquals": {
-          "aws:SourceArn": "${var.product_created_topic_arn}"
+          "aws:SourceArn": "${aws_cloudwatch_event_rule.product_created_event_rule.arn}"
         }
       }
     }

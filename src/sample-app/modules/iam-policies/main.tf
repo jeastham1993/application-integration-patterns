@@ -28,3 +28,15 @@ resource "aws_iam_policy" "sns_publish_message" {
   path   = "/"
   policy = data.aws_iam_policy_document.sns_publish_policy.json
 }
+
+resource "aws_iam_policy" "event_bridge_put_events" {
+  name   = "event_bridge_put_events_policy"
+  path   = "/"
+  policy = data.aws_iam_policy_document.event_bridge_put_events.json
+}
+
+resource "aws_iam_policy" "ssm_parameter_read" {
+  name   = "ssm_parameter_read_policy"
+  path   = "/"
+  policy = data.aws_iam_policy_document.ssm_parameter_read.json
+}

@@ -12,6 +12,10 @@ using AWS.Lambda.Powertools.Logging;
 using Amazon.DynamoDBv2;
 using Amazon.DynamoDBv2.DocumentModel;
 using System;
+using Amazon.SimpleNotificationService.Model;
+using System.Collections.Generic;
+using ApplicationIntegrationPatterns.Core.Events;
+using System.Text.Json;
 
 namespace DynamoDbStreamHandler
 {
@@ -54,7 +58,20 @@ namespace DynamoDbStreamHandler
 
                 var newProduct = DynamoDbProductAdapter.DynamoDbItemToProduct(recordAsDocument.ToAttributeMap());
 
-                await this._snsClient.PublishAsync(TOPIC_ARN, new ProductDTO(newProduct).ToString());
+                await this._snsClient.PublishAsync(new PublishRequest()
+                {
+                    Message = JsonSerializer.Serialize(new ProductCreatedEvent()
+                    {
+                        Product = new ProductDTO(newProduct)
+                    }),
+                    TopicArn = TOPIC_ARN,
+                    MessageAttributes = new Dictionary<string, MessageAttributeValue>(1)
+                    {
+                        { 
+                            "EVENT_TYPE", new MessageAttributeValue() { StringValue = "product-created", DataType = "String" } 
+                        }
+                    }
+                });
             }
         }
     }

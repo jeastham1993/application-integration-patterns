@@ -17,3 +17,11 @@ output "cloud_watch_put_metrics" {
 output "sns_publish_message" {
   value       =  aws_iam_policy.sns_publish_message.arn
 }
+
+output "event_bridge_put_events" {
+  value       =  aws_iam_policy.event_bridge_put_events.arn
+}
+
+output "ssm_parameter_read" {
+  value       =  aws_iam_policy.ssm_parameter_read.arn
+}
