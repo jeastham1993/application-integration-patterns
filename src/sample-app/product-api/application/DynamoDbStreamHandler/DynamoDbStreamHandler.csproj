@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+    <GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>
+    <AWSProjectType>Lambda</AWSProjectType>
+    <PublishReadyToRun>true</PublishReadyToRun>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Amazon.Lambda.Core" Version="2.1.0" />
+    <PackageReference Include="Amazon.Lambda.DynamoDBEvents" Version="2.1.1" />
+    <PackageReference Include="Amazon.Lambda.Serialization.SystemTextJson" Version="2.2.0" />
+    <PackageReference Include="AWS.Lambda.Powertools.Logging" Version="0.0.1-preview.1" />
+    <PackageReference Include="AWS.Lambda.Powertools.Metrics" Version="0.0.1-preview.1" />
+    <PackageReference Include="AWS.Lambda.Powertools.Tracing" Version="0.0.1-preview.1" />
+    <PackageReference Include="AWSSDK.SimpleNotificationService" Version="3.7.3.96" />
+    <PackageReference Include="AWSXRayRecorder" Version="2.11.1" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="6.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\ApplicationIntegrationPatterns.Core\ApplicationIntegrationPatterns.Core.csproj" />
+    <ProjectReference Include="..\ApplicationIntegrationPatterns.Implementations\ApplicationIntegrationPatterns.Implementations.csproj" />
+  </ItemGroup>
+</Project>
+

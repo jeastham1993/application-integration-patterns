@@ -1,0 +1,26 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <PublishReadyToRun>true</PublishReadyToRun>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="AWSSDK.DynamoDBv2" Version="3.7.3.59" />
+    <PackageReference Include="AWSSDK.SimpleNotificationService" Version="3.7.3.96" />
+    <PackageReference Include="AWSSDK.SimpleSystemsManagement" Version="3.7.17.42" />
+    <PackageReference Include="AWSXRayRecorder" Version="2.11.1" />
+    <PackageReference Include="AWSXRayRecorder.Handlers.AwsSdk" Version="2.9.1" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="6.0.0" />
+	  <PackageReference Include="AWS.Lambda.Powertools.Logging" Version="0.0.1-preview.1" />
+	  <PackageReference Include="AWS.Lambda.Powertools.Metrics" Version="0.0.1-preview.1" />
+	  <PackageReference Include="AWS.Lambda.Powertools.Tracing" Version="0.0.1-preview.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\ApplicationIntegrationPatterns.Core\ApplicationIntegrationPatterns.Core.csproj" />
+  </ItemGroup>
+
+</Project>
