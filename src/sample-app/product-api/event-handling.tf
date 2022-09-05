@@ -44,18 +44,20 @@ resource "aws_lambda_event_source_mapping" "example" {
 }
 
 # Update Product Catalogue
-resource "aws_sqs_queue" "product_catalogue_updates_queue" {
-  name = "${var.environment}-update-product-catalogue-queue"
+module "product_catalogue_updates_queue" {
+  source            = "../modules/sqs-with-dlq"
+  queue_name        = "${var.environment}-update-product-catalogue-queue"
+  max_receive_count = 2
 }
 
 resource "aws_sns_topic_subscription" "product_catalogue_queue_target" {
   topic_arn = aws_sns_topic.product_created_topic.arn
   protocol  = "sqs"
-  endpoint  = aws_sqs_queue.product_catalogue_updates_queue.arn
+  endpoint  = module.product_catalogue_updates_queue.queue_arn
 }
 
 resource "aws_sqs_queue_policy" "product_catalogue_queue_policy" {
-  queue_url = aws_sqs_queue.product_catalogue_updates_queue.id
+  queue_url = module.product_catalogue_updates_queue.queue_id
 
   policy = <<POLICY
 {
@@ -67,7 +69,7 @@ resource "aws_sqs_queue_policy" "product_catalogue_queue_policy" {
       "Effect": "Allow",
       "Principal": "*",
       "Action": "sqs:SendMessage",
-      "Resource": "${aws_sqs_queue.product_catalogue_updates_queue.arn}",
+      "Resource": "${module.product_catalogue_updates_queue.queue_arn}",
       "Condition": {
         "ArnEquals": {
           "aws:SourceArn": "${aws_sns_topic.product_created_topic.arn}"
@@ -86,8 +88,8 @@ module "update_product_catalogue_lambda" {
   zip_file         = "UpdateProductCatalogue.zip"
   function_name    = "UpdateProductCatalogue"
   lambda_handler   = "UpdateProductCatalogue::UpdateProductCatalogue.Function::FunctionHandler"
-  queue_arn        = aws_sqs_queue.product_catalogue_updates_queue.arn
-  queue_name       = aws_sqs_queue.product_catalogue_updates_queue.name
+  queue_arn        = module.product_catalogue_updates_queue.queue_arn
+  queue_name       = module.product_catalogue_updates_queue.queue_name
   environment_variables = {
     "PRODUCT_TABLE_NAME"           = aws_dynamodb_table.synchornous_api_table.name
     "POWERTOOLS_SERVICE_NAME"      = "product-api"
@@ -106,18 +108,20 @@ resource "aws_iam_role_policy_attachment" "update_product_catalogue_lambda_cw_me
 }
 
 # External Event Publisher
-resource "aws_sqs_queue" "external_event_publishing_queue" {
-  name = "${var.environment}-external-event-publishing-queue"
+module "external_event_publishing_queue" {
+  source            = "../modules/sqs-with-dlq"
+  queue_name        = "${var.environment}-external-event-publishing-queue"
+  max_receive_count = 2
 }
 
 resource "aws_sns_topic_subscription" "external_event_publisher_queue_target" {
   topic_arn = aws_sns_topic.product_created_topic.arn
   protocol  = "sqs"
-  endpoint  = aws_sqs_queue.external_event_publishing_queue.arn
+  endpoint  = module.external_event_publishing_queue.queue_arn
 }
 
 resource "aws_sqs_queue_policy" "external_events_queue_policy" {
-  queue_url = aws_sqs_queue.external_event_publishing_queue.id
+  queue_url = module.external_event_publishing_queue.queue_id
 
   policy = <<POLICY
 {
@@ -129,7 +133,7 @@ resource "aws_sqs_queue_policy" "external_events_queue_policy" {
       "Effect": "Allow",
       "Principal": "*",
       "Action": "sqs:SendMessage",
-      "Resource": "${aws_sqs_queue.external_event_publishing_queue.arn}",
+      "Resource": "${module.external_event_publishing_queue.queue_arn}",
       "Condition": {
         "ArnEquals": {
           "aws:SourceArn": "${aws_sns_topic.product_created_topic.arn}"
@@ -148,8 +152,8 @@ module "external_event_publishing_lambda" {
   zip_file         = "ExternalEventPublisher.zip"
   function_name    = "ExternalEventPublisher"
   lambda_handler   = "ExternalEventPublisher::ExternalEventPublisher.Function::FunctionHandler"
-  queue_arn        = aws_sqs_queue.external_event_publishing_queue.arn
-  queue_name       = aws_sqs_queue.external_event_publishing_queue.name
+  queue_arn        = module.external_event_publishing_queue.queue_arn
+  queue_name       = module.external_event_publishing_queue.queue_name
   environment_variables = {
     "POWERTOOLS_SERVICE_NAME"      = "product-api"
     "POWERTOOLS_METRICS_NAMESPACE" = "product-api"
