@@ -14,6 +14,10 @@ resource "aws_s3_object" "lambda_bundle" {
   etag = filemd5(data.archive_file.lambda_archive.output_path)
 }
 
+resource "aws_sqs_queue" "lambda_dlq" {
+  name = "${var.function_name}-dlq"
+}
+
 resource "aws_lambda_function" "function" {
   function_name    = var.function_name
   s3_bucket        = var.lambda_bucket_id
@@ -23,6 +27,9 @@ resource "aws_lambda_function" "function" {
   source_code_hash = data.archive_file.lambda_archive.output_base64sha256
   role             = aws_iam_role.lambda_function_role.arn
   timeout          = 30
+  dead_letter_config {
+    target_arn = aws_sqs_queue.lambda_dlq.arn
+  }
   dynamic "environment" {
     for_each = length(var.environment_variables) > 0 ? [1] : []
     content {
@@ -89,4 +96,29 @@ resource "aws_lambda_event_source_mapping" "sqs_event_source_mapping" {
   enabled          = true
   function_name    = aws_lambda_function.function.arn
   batch_size       = 10
+}
+
+resource "aws_sqs_queue_policy" "dlq" {
+  queue_url = aws_sqs_queue.lambda_dlq.id
+  policy    = <<POLICY
+{
+  "Version": "2012-10-17",
+  "Id": "sqspolicy",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Principal": {
+        "Service": "lambda.amazonaws.com"
+      },
+      "Action": "sqs:SendMessage",
+      "Resource": "${aws_sqs_queue.lambda_dlq.arn}",
+      "Condition": {
+        "ArnEquals": {
+          "aws:SourceArn": "${aws_lambda_function.function.arn}"
+        }
+      }
+    }
+  ]
+}
+POLICY
 }
