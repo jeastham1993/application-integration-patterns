@@ -11,6 +11,12 @@ resource "aws_iam_policy" "dynamo_db_write" {
   policy = data.aws_iam_policy_document.dynamo_db_write.json
 }
 
+resource "aws_iam_policy" "dynamo_db_crud" {
+  name   = "dynamo_db_crud_policy"
+  path   = "/"
+  policy = data.aws_iam_policy_document.dynamo_db_crud.json
+}
+
 resource "aws_iam_policy" "cloud_watch_put_metrics" {
   name   = "cloud_watch_put_metrics_policy"
   path   = "/"

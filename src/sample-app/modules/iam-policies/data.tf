@@ -17,6 +17,22 @@ data "aws_iam_policy_document" "dynamo_db_write" {
   }
 }
 
+data "aws_iam_policy_document" "dynamo_db_crud" {
+  statement {
+    actions = ["dynamodb:GetItem",
+      "dynamodb:DeleteItem",
+      "dynamodb:PutItem",
+      "dynamodb:Scan",
+      "dynamodb:Query",
+      "dynamodb:UpdateItem",
+      "dynamodb:BatchWriteItem",
+      "dynamodb:BatchGetItem",
+      "dynamodb:DescribeTable",
+    "dynamodb:ConditionCheckItem"]
+    resources = ["arn:aws:dynamodb:*:${data.aws_caller_identity.current.account_id}:table/${var.table_name}", "arn:aws:dynamodb:*:${data.aws_caller_identity.current.account_id}:table/${var.table_name}/*"]
+  }
+}
+
 data "aws_iam_policy_document" "cloud_watch_put_metrics" {
   statement {
     actions   = ["cloudwatch:PutMetricData"]
