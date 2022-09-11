@@ -29,6 +29,8 @@ public static class Startup
         serviceCollection.AddSingleton<IProductRepository, DynamoDbProductRepository>();
         serviceCollection.AddSingleton<GetProductQueryHandler>();
         serviceCollection.AddSingleton<CreateProductCommandHandler>();
+        serviceCollection.AddSingleton<UpdateProductCommandHandler>();
+        serviceCollection.AddSingleton<DeleteProductCommandHandler>();
         serviceCollection.AddSingleton<UpdateProductCatalogueCommandHandler>();
 
         Services = serviceCollection.BuildServiceProvider();

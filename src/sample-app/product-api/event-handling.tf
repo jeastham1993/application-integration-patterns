@@ -2,6 +2,14 @@ resource "aws_sns_topic" "product_created_topic" {
   name = "${var.environment}-product-created"
 }
 
+resource "aws_sns_topic" "product_updated_topic" {
+  name = "${var.environment}-product-updated"
+}
+
+resource "aws_sns_topic" "product_deleted_topic" {
+  name = "${var.environment}-product-deleted"
+}
+
 # DynamoDB Steam Handler Lambda
 module "dynamo_db_stream_handler" {
   source           = "../modules/lambda-function"
@@ -12,6 +20,8 @@ module "dynamo_db_stream_handler" {
   lambda_handler   = "DynamoDbStreamHandler::DynamoDbStreamHandler.Function::FunctionHandler"
   environment_variables = {
     "PRODUCT_CREATED_TOPIC_ARN"    = aws_sns_topic.product_created_topic.arn
+    "PRODUCT_UPDATED_TOPIC_ARN"    = aws_sns_topic.product_updated_topic.arn
+    "PRODUCT_DELETED_TOPIC_ARN"    = aws_sns_topic.product_deleted_topic.arn
     "POWERTOOLS_SERVICE_NAME"      = "product-api"
     "POWERTOOLS_METRICS_NAMESPACE" = "product-api"
   }

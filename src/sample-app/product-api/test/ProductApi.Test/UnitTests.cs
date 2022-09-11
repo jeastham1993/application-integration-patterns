@@ -1,6 +1,7 @@
 using System;
 using System.Linq;
 using System.Text.Json;
+using Amazon.DynamoDBv2.Model;
 using ApplicationIntegrationPatterns.Core.DataTransfer;
 using ApplicationIntegrationPatterns.Core.Models;
 using ApplicationIntegrationPatterns.Implementations.Models;
@@ -30,6 +31,7 @@ namespace ProductApi.Test
             product.UpdateDescription("This is the description of my test product");
 
             product.Description.Should().Be("This is the description of my test product");
+            product.HasChanged.Should().BeTrue();
         }
         
         [Fact]

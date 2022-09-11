@@ -1,10 +1,16 @@
 ﻿using ApplicationIntegrationPatterns.Core.Models;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace ApplicationIntegrationPatterns.Core.DataTransfer;
 
 public record ProductDTO
 {
+    [JsonConstructor]
+    private ProductDTO()
+    {
+    }
+    
     public ProductDTO(Product product)
     {
         this.ProductId = product.ProductId;
@@ -19,15 +25,15 @@ public record ProductDTO
         }
     }
     
-    public string ProductId { get; private set; }
+    public string ProductId { get; set; }
     
-    public string Name { get; private set; }
+    public string Name { get; set; }
     
-    public string Description { get; private set; }
+    public string Description { get; set; }
     
-    public decimal CurrentPrice { get; private set; }
+    public decimal CurrentPrice { get; set; }
     
-    public Dictionary<DateTime, decimal> PricingHistory { get; private set; }
+    public Dictionary<DateTime, decimal> PricingHistory { get; set; }
 
     public override string ToString() => JsonSerializer.Serialize(this);
 }

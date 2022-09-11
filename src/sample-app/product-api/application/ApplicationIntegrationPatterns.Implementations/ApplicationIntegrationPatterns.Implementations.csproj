@@ -8,6 +8,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Amazon.Lambda.Annotations" Version="0.7.0-preview" />
     <PackageReference Include="AWSSDK.DynamoDBv2" Version="3.7.3.59" />
     <PackageReference Include="AWSSDK.SimpleNotificationService" Version="3.7.3.96" />
     <PackageReference Include="AWSSDK.SimpleSystemsManagement" Version="3.7.17.42" />

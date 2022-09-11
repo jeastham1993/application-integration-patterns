@@ -14,11 +14,11 @@ public class DynamoDbProductRepository : IProductRepository
     {
         _client = client;
     }
-    
+
     public async Task Create(Product product)
     {
         var item = DynamoDbProductAdapter.ProductToDynamoDbItem(product);
-                
+
         await this._client.PutItemAsync(PRODUCT_TABLE_NAME, item);
     }
 
@@ -31,5 +31,31 @@ public class DynamoDbProductRepository : IProductRepository
             }));
 
         return DynamoDbProductAdapter.DynamoDbItemToProduct(getItemResponse.Item);
+    }
+
+    public async Task<Product> Update(Product product)
+    {
+        if (string.IsNullOrEmpty(product.ProductId))
+        {
+            return product;
+        }
+
+        var item = DynamoDbProductAdapter.ProductToDynamoDbItemUpdate(product);
+
+        await this._client.UpdateItemAsync(PRODUCT_TABLE_NAME, new Dictionary<string, AttributeValue>(1)
+        {
+            {"PK", new AttributeValue(product.ProductId)}
+        }, item);
+
+        return product;
+    }
+
+    public async Task Delete(string productId)
+    {
+        var deleteItemResponse = await this._client.DeleteItemAsync(new DeleteItemRequest(PRODUCT_TABLE_NAME,
+            new Dictionary<string, AttributeValue>(1)
+            {
+                {"PK", new AttributeValue(productId)}
+            }));
     }
 }
