@@ -76,10 +76,11 @@ resource "aws_iam_policy" "queue_policy" {
       "Effect": "Allow",
       "Action": [
         "sqs:ReceiveMessage",
+        "sqs:SendMessage",
         "sqs:DeleteMessage",
         "sqs:GetQueueAttributes"
       ],
-      "Resource": "${var.queue_arn}"
+      "Resource": ["${var.queue_arn}", "${aws_sqs_queue.lambda_dlq.arn}"]
     }
   ]
 }

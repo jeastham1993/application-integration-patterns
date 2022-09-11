@@ -6,6 +6,10 @@ output "dynamo_db_write" {
   value       =  aws_iam_policy.dynamo_db_write.arn
 }
 
+output "dynamo_db_crud" {
+  value       =  aws_iam_policy.dynamo_db_crud.arn
+}
+
 output "dynamo_db_read_stream" {
   value       =  aws_iam_policy.dynamo_db_stream_read_policy.arn
 }

@@ -50,6 +50,8 @@ public class Product
     
     public string Description { get; private set; }
 
+    public bool HasChanged { get; private set; }
+
     public IReadOnlyCollection<PricingHistory> PricingHistory => this._pricingHistory;
     
     public void UpdatePricing(decimal newPrice)
@@ -62,15 +64,17 @@ public class Product
         this._pricingHistory.Add(new PricingHistory(DateTime.Now, newPrice));
 
         this.Price = newPrice;
+        this.HasChanged = true;
     }
 
     public void UpdateDescription(string description)
     {
-        if (string.IsNullOrEmpty(description))
+        if (string.IsNullOrEmpty(description) || description.Equals(this.Description, StringComparison.OrdinalIgnoreCase))
         {
             return;
         }
 
         this.Description = description;
+        this.HasChanged = true;
     }
 }

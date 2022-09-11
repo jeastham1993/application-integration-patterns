@@ -69,6 +69,105 @@ public class CommandTests
     }
 
     [Fact]
+    public async Task UpdateProductWithNewDescription_ShouldUpdate()
+    {
+        var testProduct = Product.Create("Test product", 10);
+        testProduct.UpdateDescription("Initial description");
+
+        var mockRepo = new Mock<IProductRepository>();
+        mockRepo.Setup(p => p.Get(It.IsAny<string>()))
+            .ReturnsAsync(testProduct)
+            .Verifiable();
+        mockRepo.Setup(p => p.Update(It.IsAny<Product>()))
+            .Verifiable();
+
+        var handler = new UpdateProductCommandHandler(mockRepo.Object, _mockLogger);
+
+        await handler.Handle(new UpdateProductCommand()
+        {
+            ProductId = testProduct.ProductId,
+            Description = "My new description",
+            Price = 10
+        });
+
+        mockRepo.Verify(p => p.Get(testProduct.ProductId), Times.Once);
+        mockRepo.Verify(p => p.Update(It.IsAny<Product>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task UpdateProductWithNewPrice_ShouldUpdate()
+    {
+        var testProduct = Product.Create("Test product", 10);
+        testProduct.UpdateDescription("Initial description");
+
+        var mockRepo = new Mock<IProductRepository>();
+        mockRepo.Setup(p => p.Get(It.IsAny<string>()))
+            .ReturnsAsync(testProduct)
+            .Verifiable();
+        mockRepo.Setup(p => p.Update(It.IsAny<Product>()))
+            .Verifiable();
+
+        var handler = new UpdateProductCommandHandler(mockRepo.Object, _mockLogger);
+
+        await handler.Handle(new UpdateProductCommand()
+        {
+            ProductId = testProduct.ProductId,
+            Description = "Initial description",
+            Price = 50
+        });
+
+        mockRepo.Verify(p => p.Get(testProduct.ProductId), Times.Once);
+        mockRepo.Verify(p => p.Update(It.IsAny<Product>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task UpdateProductWithNoChanges_ShouldNotUpdate()
+    {
+        var testProduct = Product.Create("Test product", 10);
+
+        var mockRepo = new Mock<IProductRepository>();
+        mockRepo.Setup(p => p.Get(It.IsAny<string>()))
+            .ReturnsAsync(testProduct)
+            .Verifiable();
+        mockRepo.Setup(p => p.Update(It.IsAny<Product>()))
+            .Verifiable();
+
+        var handler = new UpdateProductCommandHandler(mockRepo.Object, _mockLogger);
+
+        await handler.Handle(new UpdateProductCommand()
+        {
+            ProductId = testProduct.ProductId,
+            Description = null,
+            Price = 10
+        });
+
+        mockRepo.Verify(p => p.Get(testProduct.ProductId), Times.Once);
+        mockRepo.Verify(p => p.Update(It.IsAny<Product>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task DeleteProductCommand_ShouldDelete()
+    {
+        var testProduct = Product.Create("Test product", 10);
+
+        var mockRepo = new Mock<IProductRepository>();
+        mockRepo.Setup(p => p.Get(It.IsAny<string>()))
+            .ReturnsAsync(testProduct)
+            .Verifiable();
+        mockRepo.Setup(p => p.Delete(It.IsAny<string>()))
+            .Verifiable();
+
+        var handler = new DeleteProductCommandHandler(mockRepo.Object, _mockLogger);
+
+        await handler.Handle(new DeleteProductCommand()
+        {
+            ProductId = testProduct.ProductId,
+        });
+
+        mockRepo.Verify(p => p.Delete(testProduct.ProductId), Times.Once);
+    }
+
+    [Fact]
     public async Task UpdateProductCatalog_ShouldUpdateCatalogue()
     {
         var testProduct = Product.Create("Test product", 10);
