@@ -17,7 +17,7 @@ module "dynamo_db_stream_handler" {
   publish_dir      = "${path.module}/application/DynamoDbStreamHandler/bin/Release/net6.0/linux-x64/publish"
   zip_file         = "DynamoDbStreamHandler.zip"
   function_name    = "DynamoDbStreamHandler"
-  lambda_handler   = "DynamoDbStreamHandler::DynamoDbStreamHandler.Function::FunctionHandler"
+  lambda_handler   = "DynamoDbStreamHandler::DynamoDbStreamHandler.Function::TracedFunctionHandler"
   environment_variables = {
     "PRODUCT_CREATED_TOPIC_ARN"    = aws_sns_topic.product_created_topic.arn
     "PRODUCT_UPDATED_TOPIC_ARN"    = aws_sns_topic.product_updated_topic.arn
@@ -97,7 +97,7 @@ module "update_product_catalogue_lambda" {
   publish_dir      = "${path.module}/application/UpdateProductCatalogue/bin/Release/net6.0/linux-x64/publish"
   zip_file         = "UpdateProductCatalogue.zip"
   function_name    = "UpdateProductCatalogue"
-  lambda_handler   = "UpdateProductCatalogue::UpdateProductCatalogue.Function::FunctionHandler"
+  lambda_handler   = "UpdateProductCatalogue::UpdateProductCatalogue.Function::TracedFunctionHandler"
   queue_arn        = module.product_catalogue_updates_queue.queue_arn
   queue_name       = module.product_catalogue_updates_queue.queue_name
   environment_variables = {
@@ -161,7 +161,7 @@ module "external_event_publishing_lambda" {
   publish_dir      = "${path.module}/application/ExternalEventPublisher/bin/Release/net6.0/linux-x64/publish"
   zip_file         = "ExternalEventPublisher.zip"
   function_name    = "ExternalEventPublisher"
-  lambda_handler   = "ExternalEventPublisher::ExternalEventPublisher.Function::FunctionHandler"
+  lambda_handler   = "ExternalEventPublisher::ExternalEventPublisher.Function::TracedFunctionHandler"
   queue_arn        = module.external_event_publishing_queue.queue_arn
   queue_name       = module.external_event_publishing_queue.queue_name
   environment_variables = {

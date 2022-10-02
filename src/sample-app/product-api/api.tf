@@ -34,7 +34,7 @@ module "create_product_lambda" {
   publish_dir      = "${path.module}/application/CreateProduct/bin/Release/net6.0/linux-x64/publish"
   zip_file         = "CreateProduct.zip"
   function_name    = "CreateProduct"
-  lambda_handler   = "CreateProduct::CreateProduct.Function::FunctionHandler"
+  lambda_handler   = "CreateProduct::CreateProduct.Function::TracedFunctionHandler"
   environment_variables = {
     "PRODUCT_TABLE_NAME"           = aws_dynamodb_table.synchornous_api_table.name
     "POWERTOOLS_SERVICE_NAME"      = "product-api"
@@ -74,7 +74,7 @@ module "get_product_lambda" {
   publish_dir      = "${path.module}/application/GetProduct/bin/Release/net6.0/linux-x64/publish"
   zip_file         = "GetProduct.zip"
   function_name    = "GetProduct"
-  lambda_handler   = "GetProduct::GetProduct.Function::FunctionHandler"
+  lambda_handler   = "GetProduct::GetProduct.Function::TracedFunctionHandler"
   environment_variables = {
     "PRODUCT_TABLE_NAME"           = aws_dynamodb_table.synchornous_api_table.name
     "POWERTOOLS_SERVICE_NAME"      = "product-api"
@@ -109,7 +109,7 @@ module "update_product_lambda" {
   publish_dir      = "${path.module}/application/UpdateProduct/bin/Release/net6.0/linux-x64/publish"
   zip_file         = "UpdateProduct.zip"
   function_name    = "UpdateProduct"
-  lambda_handler   = "UpdateProduct::UpdateProduct.Function::FunctionHandler"
+  lambda_handler   = "UpdateProduct::UpdateProduct.Function::TracedFunctionHandler"
   environment_variables = {
     "PRODUCT_TABLE_NAME"           = aws_dynamodb_table.synchornous_api_table.name
     "POWERTOOLS_SERVICE_NAME"      = "product-api"
@@ -144,7 +144,7 @@ module "delete_product_lambda" {
   publish_dir      = "${path.module}/application/DeleteProduct/bin/Release/net6.0/linux-x64/publish"
   zip_file         = "DeleteProduct.zip"
   function_name    = "DeleteProduct"
-  lambda_handler   = "DeleteProduct::DeleteProduct.Function::FunctionHandler"
+  lambda_handler   = "DeleteProduct::DeleteProduct.Function::TracedFunctionHandler"
   environment_variables = {
     "PRODUCT_TABLE_NAME"           = aws_dynamodb_table.synchornous_api_table.name
     "POWERTOOLS_SERVICE_NAME"      = "product-api"

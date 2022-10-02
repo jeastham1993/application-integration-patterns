@@ -1,3 +1,5 @@
+using System;
+using System.Diagnostics;
 using System.Threading.Tasks;
 using System.Text.Json;
 using Amazon.Lambda.Core;
@@ -5,15 +7,14 @@ using ApplicationIntegrationPatterns.Core.Command;
 using Microsoft.Extensions.DependencyInjection;
 using ApplicationIntegrationPatterns.Core.Services;
 using ApplicationIntegrationPatterns.Implementations;
-using AWS.Lambda.Powertools.Tracing;
-using AWS.Lambda.Powertools.Metrics;
 using ApplicationIntegrationPatterns.Core.Events;
 using Amazon.Lambda.SQSEvents;
 using ApplicationIntegrationPatterns.Implementations.Models;
+using Shared;
 
 namespace UpdateProductCatalogue
 {
-    public class Function
+    public class Function : SqsTracedFunction<string>
     {
         private readonly UpdateProductCatalogueCommandHandler _handler;
         private readonly ILoggingService _loggingService;
@@ -29,10 +30,8 @@ namespace UpdateProductCatalogue
             this._handler = handler ?? Startup.Services.GetRequiredService<UpdateProductCatalogueCommandHandler>();
             this._loggingService = loggingService ?? Startup.Services.GetRequiredService<ILoggingService>();
         }
-
-        [Tracing]
-        [Metrics(CaptureColdStart =true)]
-        public async Task FunctionHandler(SQSEvent evt, ILambdaContext context)
+        
+        public async Task<string> FunctionHandler(SQSEvent evt, ILambdaContext context)
         {
             this._loggingService.LogInfo("Received request to update product catalogue");
 
@@ -40,7 +39,12 @@ namespace UpdateProductCatalogue
 
             foreach (var record in evt.Records)
             {
+                var hydratedContext = this.HydrateContextFromSnsMessage(record);
+                
                 this._loggingService.LogInfo($"Processing {record.Body}");
+                
+                using var activity =
+                    Activity.Current.Source.StartActivity("UpdatingProductCatalogue", ActivityKind.Consumer, parentContext: hydratedContext).AddSqsAttributes(record);
 
                 var snsData = JsonSerializer.Deserialize<SnsToSqsMessageBody>(record.Body);
 
@@ -54,9 +58,10 @@ namespace UpdateProductCatalogue
                 catalogueUpdated++;
             }
 
-            MetricService.IncrementMetric("ProductCatalogueRecordsUpdated", catalogueUpdated);
-
-            return;
+            return "OK";
         }
+
+        public override string SERVICE_NAME => "UpdateProductCatalogue";
+        public override Func<SQSEvent, ILambdaContext, Task<string>> Handler => FunctionHandler;
     }
 }

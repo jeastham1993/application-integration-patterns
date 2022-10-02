@@ -7,8 +7,6 @@ using ApplicationIntegrationPatterns.Core.Command;
 using Microsoft.Extensions.DependencyInjection;
 using ApplicationIntegrationPatterns.Core.Services;
 using ApplicationIntegrationPatterns.Implementations;
-using AWS.Lambda.Powertools.Tracing;
-using AWS.Lambda.Powertools.Metrics;
 
 namespace DeleteProduct
 {
@@ -29,8 +27,6 @@ namespace DeleteProduct
             this._loggingService = loggingService ?? Startup.Services.GetRequiredService<ILoggingService>();
         }
 
-        [Tracing]
-        [Metrics(CaptureColdStart = true)]
         public async Task<APIGatewayProxyResponse> FunctionHandler(APIGatewayProxyRequest apigProxyEvent,
             ILambdaContext context)
         {
@@ -51,8 +47,6 @@ namespace DeleteProduct
             {
                 ProductId = apigProxyEvent.PathParameters["productId"]
             });
-
-            MetricService.IncrementMetric("ProductDeleted", 1);
 
             return new APIGatewayProxyResponse
             {

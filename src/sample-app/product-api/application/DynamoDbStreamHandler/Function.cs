@@ -3,8 +3,6 @@ using Amazon.Lambda.Core;
 using Microsoft.Extensions.DependencyInjection;
 using ApplicationIntegrationPatterns.Core.Services;
 using ApplicationIntegrationPatterns.Implementations;
-using AWS.Lambda.Powertools.Tracing;
-using AWS.Lambda.Powertools.Metrics;
 using Amazon.Lambda.DynamoDBEvents;
 using Amazon.SimpleNotificationService;
 using ApplicationIntegrationPatterns.Core.DataTransfer;
@@ -14,13 +12,17 @@ using Amazon.DynamoDBv2.DocumentModel;
 using System;
 using Amazon.SimpleNotificationService.Model;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.Tracing;
 using ApplicationIntegrationPatterns.Core.Events;
 using System.Text.Json;
+using ApplicationIntegrationPatterns.Core.Models;
+using Shared;
+using Shared.Messaging;
 
 namespace DynamoDbStreamHandler
 {
-    public class Function
+    public class Function : TracedFunction<DynamoDBEvent, string>
     {
         private static string CREATED_TOPIC_ARN = Environment.GetEnvironmentVariable("PRODUCT_CREATED_TOPIC_ARN");
         private static string UPDATED_TOPIC_ARN = Environment.GetEnvironmentVariable("PRODUCT_UPDATED_TOPIC_ARN");
@@ -40,17 +42,14 @@ namespace DynamoDbStreamHandler
             this._loggingService = loggingService ?? Startup.Services.GetRequiredService<ILoggingService>();
             this._snsClient = snsClient ?? new AmazonSimpleNotificationServiceClient();
         }
-
-        [Tracing]
-        [Metrics(CaptureColdStart =true)]
-        [Logging(LogEvent = true)]
-        public async Task FunctionHandler(DynamoDBEvent dynamoStreamEvent, ILambdaContext context)
+        
+        public async Task<string> FunctionHandler(DynamoDBEvent dynamoStreamEvent, ILambdaContext context)
         {
             foreach (var evt in dynamoStreamEvent.Records)
             {
                 var topicName = "";
-                var eventPayload = "";
                 var eventType = "";
+                Product productData = null;
 
                 this._loggingService.LogInfo($"Processing {evt.EventName}");
                 
@@ -60,36 +59,35 @@ namespace DynamoDbStreamHandler
                         var insertRecordAsDocument = Document.FromAttributeMap(evt.Dynamodb.NewImage);
                         topicName = CREATED_TOPIC_ARN;
                         eventType = "product-created";
-                        var productDTO = DynamoDbProductAdapter.DynamoDbItemToProduct(insertRecordAsDocument.ToAttributeMap());
-                        eventPayload = JsonSerializer.Serialize(productDTO);
+                        productData = DynamoDbProductAdapter.DynamoDbItemToProduct(insertRecordAsDocument.ToAttributeMap());
                         break;
                     case "MODIFY":
                         var updateRecordAsDocument = Document.FromAttributeMap(evt.Dynamodb.NewImage);
                         topicName = UPDATED_TOPIC_ARN;
                         eventType = "product-updated";
-                        var updatedProductDTO = DynamoDbProductAdapter.DynamoDbItemToProduct(updateRecordAsDocument.ToAttributeMap());
-                        eventPayload = JsonSerializer.Serialize(updatedProductDTO);
+                        productData = DynamoDbProductAdapter.DynamoDbItemToProduct(updateRecordAsDocument.ToAttributeMap());
                         break;
                     case "REMOVE":
                         var deleteRecordAsDocument = Document.FromAttributeMap(evt.Dynamodb.OldImage);
                         topicName = DELETED_TOPIC_ARN;
                         eventType = "product-deleted";
-                        var deletedProductDTO = DynamoDbProductAdapter.DynamoDbItemToProduct(deleteRecordAsDocument.ToAttributeMap());
-                        eventPayload = JsonSerializer.Serialize(deletedProductDTO);
+                        productData = DynamoDbProductAdapter.DynamoDbItemToProduct(deleteRecordAsDocument.ToAttributeMap());
                         break;
                 }
 
                 if (string.IsNullOrEmpty(topicName))
                 {
                     this._loggingService.LogWarning("Invalid event type");
-                    return;
+                    return "OK";
                 }
                 
                 this._loggingService.LogInfo($"Publishing event data to {topicName} with type {eventType}");
 
+                using var snsPublishActivity = Activity.Current.Source.StartActivity("SNSPublish");
+
                 await this._snsClient.PublishAsync(new PublishRequest()
                 {
-                    Message = eventPayload,
+                    Message = JsonSerializer.Serialize(new MessageWrapper<Product>(){Data = productData}),
                     TopicArn = topicName,
                     MessageAttributes = new Dictionary<string, MessageAttributeValue>(1)
                     {
@@ -100,6 +98,25 @@ namespace DynamoDbStreamHandler
                     }
                 });
             }
+            
+            return "OK";
         }
+
+        public override string SERVICE_NAME => "DynamoDbStreamHandler";
+        public override Func<DynamoDBEvent, ILambdaContext, Task<string>> Handler => FunctionHandler;
+
+        public override Func<DynamoDBEvent, ILambdaContext, bool> ContextPropagator => (evt, ctx) =>
+        {
+            return true;
+        };
+        
+        public override Func<DynamoDBEvent, Activity, bool> AddRequestAttributes => (evt, ctx) =>
+        {
+            return true;
+        };
+        public override Func<string, Activity, bool> AddResponseAttributes => (evt, ctx) =>
+        {
+            return true;
+        };
     }
 }

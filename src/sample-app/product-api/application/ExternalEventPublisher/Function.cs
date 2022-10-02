@@ -13,16 +13,18 @@ using Amazon.EventBridge.Model;
 using System.Collections.Generic;
 using Amazon.SimpleSystemsManagement;
 using System;
+using System.Diagnostics;
 using System.Linq;
 using Amazon.Lambda.SQSEvents;
 using AWS.Lambda.Powertools.Logging;
 using Amazon.Lambda.SNSEvents;
 using static Amazon.Lambda.SNSEvents.SNSEvent;
 using ApplicationIntegrationPatterns.Implementations.Models;
+using Shared;
 
 namespace ExternalEventPublisher
 {
-    public class Function
+    public class Function : SqsTracedFunction<string>
     {
         private readonly AmazonEventBridgeClient _eventBridgeClient;
         private readonly ILoggingService _loggingService;
@@ -42,11 +44,8 @@ namespace ExternalEventPublisher
 
             _eventBusName = parameters.RetrieveParameter(Environment.GetEnvironmentVariable("EVENT_BUS_PARAMETER")).Result;
         }
-
-        [Tracing]
-        [Metrics(CaptureColdStart =true)]
-        [Logging(LogEvent = true)]
-        public async Task FunctionHandler(SQSEvent evt, ILambdaContext context)
+        
+        public async Task<string> FunctionHandler(SQSEvent evt, ILambdaContext context)
         {
             this._loggingService.LogInfo($"Processing {evt.Records} SNS events");
 
@@ -54,7 +53,14 @@ namespace ExternalEventPublisher
 
             foreach (var record in evt.Records)
             {
+                var hydratedContext = this.HydrateContextFromSnsMessage(record);
+
+                using var activity =
+                    Activity.Current.Source.StartActivity("PublishExternalEvent", ActivityKind.Consumer, parentContext: hydratedContext).AddSqsAttributes(record);
+                
                 var snsData = JsonSerializer.Deserialize<SnsToSqsMessageBody>(record.Body);
+
+                this._loggingService.LogInfo(record.Body);
 
                 var eventPayload = snsData.Message;
                 var eventType = snsData.MessageAttributes["EVENT_TYPE"].Value;
@@ -86,7 +92,7 @@ namespace ExternalEventPublisher
             {
                 this._loggingService.LogInfo("No events to publish, returning");
 
-                return;
+                return "OK";
             }
 
             this._loggingService.LogInfo($"Publishing {eventsToPublish.Count} event(s)");
@@ -96,7 +102,10 @@ namespace ExternalEventPublisher
                 Entries = eventsToPublish
             });
 
-            return;
+            return "OK";
         }
+
+        public override string SERVICE_NAME => "ExternalEventPublisher";
+        public override Func<SQSEvent, ILambdaContext, Task<string>> Handler => FunctionHandler;
     }
 }

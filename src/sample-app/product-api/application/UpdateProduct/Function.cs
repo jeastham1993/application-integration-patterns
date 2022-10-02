@@ -7,8 +7,6 @@ using ApplicationIntegrationPatterns.Core.Command;
 using Microsoft.Extensions.DependencyInjection;
 using ApplicationIntegrationPatterns.Core.Services;
 using ApplicationIntegrationPatterns.Implementations;
-using AWS.Lambda.Powertools.Tracing;
-using AWS.Lambda.Powertools.Metrics;
 
 namespace UpdateProduct
 {
@@ -29,8 +27,6 @@ namespace UpdateProduct
             this._loggingService = loggingService ?? Startup.Services.GetRequiredService<ILoggingService>();
         }
 
-        [Tracing]
-        [Metrics(CaptureColdStart =true)]
         public async Task<APIGatewayProxyResponse> FunctionHandler(APIGatewayProxyRequest apigProxyEvent, ILambdaContext context)
         {
             if (apigProxyEvent.HttpMethod != "PUT" || string.IsNullOrEmpty(apigProxyEvent.Body))
@@ -48,8 +44,6 @@ namespace UpdateProduct
 
             var product =
                 await this._handler.Handle(JsonSerializer.Deserialize<UpdateProductCommand>(apigProxyEvent.Body));
-
-            MetricService.IncrementMetric("ProductUpdated", 1);
 
             return new APIGatewayProxyResponse
             {

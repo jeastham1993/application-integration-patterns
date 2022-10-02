@@ -26,7 +26,9 @@ resource "aws_lambda_function" "function" {
   dynamic "environment" {
     for_each = length(var.environment_variables) > 0 ? [1] : []
     content {
-      variables = var.environment_variables
+      variables = merge(var.environment_variables, {
+      HONEYCOMB_API_KEY = ""
+    })
     }
   }
 }

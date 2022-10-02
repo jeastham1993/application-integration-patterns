@@ -1,4 +1,6 @@
+using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Threading.Tasks;
 using System.Text.Json;
 using Amazon.Lambda.Core;
@@ -10,13 +12,19 @@ using Amazon.XRay.Recorder.Core;
 using AWS.Lambda.Powertools.Tracing;
 using AWS.Lambda.Powertools.Metrics;
 using ApplicationIntegrationPatterns.Implementations;
+using Shared;
 
 namespace GetProduct
 {
-    public class Function
+    public class Function : ApiGatewayTracedFunction
     {
         private readonly GetProductQueryHandler _queryHandler;
         private readonly ILoggingService _loggingService;
+
+        public override string SERVICE_NAME => "GetProduct";
+
+        public override Func<APIGatewayProxyRequest, ILambdaContext, Task<APIGatewayProxyResponse>> Handler =>
+            FunctionHandler;
 
         public Function() : this(null, null)
         {
@@ -30,10 +38,10 @@ namespace GetProduct
             this._loggingService = loggingService ?? Startup.Services.GetRequiredService<ILoggingService>();
         }
 
-        [Tracing]
-        [Metrics(CaptureColdStart = true)]
         public async Task<APIGatewayProxyResponse> FunctionHandler(APIGatewayProxyRequest apigProxyEvent, ILambdaContext context)
         {
+            using var apiActivity = Activity.Current.Source.StartActivity();
+            
             if (apigProxyEvent.HttpMethod != "GET" || apigProxyEvent.PathParameters.ContainsKey("productId") == false)
             {
                 return new APIGatewayProxyResponse

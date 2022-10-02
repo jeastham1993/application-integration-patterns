@@ -1,4 +1,6 @@
+using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Threading.Tasks;
 using System.Text.Json;
 using Amazon.Lambda.Core;
@@ -7,15 +9,19 @@ using ApplicationIntegrationPatterns.Core.Command;
 using Microsoft.Extensions.DependencyInjection;
 using ApplicationIntegrationPatterns.Core.Services;
 using ApplicationIntegrationPatterns.Implementations;
-using AWS.Lambda.Powertools.Tracing;
-using AWS.Lambda.Powertools.Metrics;
+using Shared;
 
 namespace CreateProduct
 {
-    public class Function
+    public class Function : ApiGatewayTracedFunction
     {
         private readonly CreateProductCommandHandler _handler;
         private readonly ILoggingService _loggingService;
+
+        public override string SERVICE_NAME => "CreateProduct";
+
+        public override Func<APIGatewayProxyRequest, ILambdaContext, Task<APIGatewayProxyResponse>> Handler =>
+            FunctionHandler;
 
         public Function() : this(null, null)
         {
@@ -29,10 +35,10 @@ namespace CreateProduct
             this._loggingService = loggingService ?? Startup.Services.GetRequiredService<ILoggingService>();
         }
 
-        [Tracing]
-        [Metrics(CaptureColdStart =true)]
         public async Task<APIGatewayProxyResponse> FunctionHandler(APIGatewayProxyRequest apigProxyEvent, ILambdaContext context)
         {
+            using var apiActivity = Activity.Current.Source.StartActivity();
+            
             if (apigProxyEvent.HttpMethod != "POST" || string.IsNullOrEmpty(apigProxyEvent.Body))
             {
                 this._loggingService.LogWarning("Request received that isn't a POST request, returning error");
@@ -49,7 +55,9 @@ namespace CreateProduct
             var product =
                 await this._handler.Handle(JsonSerializer.Deserialize<CreateProductCommand>(apigProxyEvent.Body));
 
-            MetricService.IncrementMetric("ProductCreated", 1);
+            apiActivity.AddTag("product-api.name", product.Name);
+            apiActivity.AddTag("product-api.price", product.CurrentPrice);
+            apiActivity.AddTag("product-api.product-id", product.ProductId);
 
             return new APIGatewayProxyResponse
             {
