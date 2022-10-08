@@ -20,6 +20,7 @@ using AWS.Lambda.Powertools.Logging;
 using Amazon.Lambda.SNSEvents;
 using static Amazon.Lambda.SNSEvents.SNSEvent;
 using ApplicationIntegrationPatterns.Implementations.Models;
+using OpenTelemetry.Trace;
 using Shared;
 
 namespace ExternalEventPublisher
@@ -34,7 +35,8 @@ namespace ExternalEventPublisher
         {
         }
 
-        internal Function(AmazonEventBridgeClient eventBridgeClient = null, ILoggingService loggingService = null, SystemParameters _parameters = null)
+        internal Function(AmazonEventBridgeClient eventBridgeClient = null, ILoggingService loggingService = null,
+            SystemParameters _parameters = null)
         {
             Startup.ConfigureServices();
 
@@ -42,65 +44,52 @@ namespace ExternalEventPublisher
             this._loggingService = loggingService ?? Startup.Services.GetRequiredService<ILoggingService>();
             var parameters = _parameters ?? Startup.Services.GetRequiredService<SystemParameters>();
 
-            _eventBusName = parameters.RetrieveParameter(Environment.GetEnvironmentVariable("EVENT_BUS_PARAMETER")).Result;
+            _eventBusName = parameters.RetrieveParameter(Environment.GetEnvironmentVariable("EVENT_BUS_PARAMETER"))
+                .Result;
         }
-        
+
         public async Task<string> FunctionHandler(SQSEvent evt, ILambdaContext context)
         {
-            this._loggingService.LogInfo($"Processing {evt.Records} SNS events");
-
             var eventsToPublish = new List<PutEventsRequestEntry>(evt.Records.Count);
 
             foreach (var record in evt.Records)
             {
                 var hydratedContext = this.HydrateContextFromSnsMessage(record);
 
-                using var activity =
-                    Activity.Current.Source.StartActivity("PublishExternalEvent", ActivityKind.Consumer, parentContext: hydratedContext).AddSqsAttributes(record);
-                
-                var snsData = JsonSerializer.Deserialize<SnsToSqsMessageBody>(record.Body);
-
-                this._loggingService.LogInfo(record.Body);
-
-                var eventPayload = snsData.Message;
-                var eventType = snsData.MessageAttributes["EVENT_TYPE"].Value;
-
-                this._loggingService.LogInfo($"Adding event from {eventType}");
-
-                eventsToPublish.Add(new PutEventsRequestEntry()
+                using (var activity =
+                       Activity.Current.Source
+                           .StartActivity("PublishExternalEvent", ActivityKind.Consumer, parentContext: hydratedContext)
+                           .AddSqsAttributes(record))
                 {
-                    Detail = eventPayload,
-                    Source = "product-api",
-                    DetailType = eventType,
-                    EventBusName = _eventBusName
-                });
+                    var snsData = JsonSerializer.Deserialize<SnsToSqsMessageBody>(record.Body);
 
-                if (eventsToPublish.Count == 10)
-                {
-                    this._loggingService.LogInfo("10 records reached, publishing events");
+                    this._loggingService.LogInfo(record.Body);
 
-                    await this._eventBridgeClient.PutEventsAsync(new PutEventsRequest()
+                    var eventPayload = snsData.Message;
+                    var eventType = snsData.MessageAttributes["EVENT_TYPE"].Value;
+
+                    this._loggingService.LogInfo($"Adding event from {eventType}");
+
+                    eventsToPublish.Add(new PutEventsRequestEntry()
                     {
-                        Entries = eventsToPublish
+                        Detail = eventPayload,
+                        Source = "product-api",
+                        DetailType = eventType,
+                        EventBusName = _eventBusName
                     });
 
-                    eventsToPublish = new List<PutEventsRequestEntry>(evt.Records.Count);
+                    using (var publishActivity = Activity.Current.Source.StartActivity("EventBridgePublish",
+                               ActivityKind.Consumer, hydratedContext))
+                    {
+                        await this._eventBridgeClient.PutEventsAsync(new PutEventsRequest()
+                        {
+                            Entries = eventsToPublish
+                        });
+                    }
+
+                    eventsToPublish.Clear();
                 }
             }
-
-            if (eventsToPublish.Count == 0)
-            {
-                this._loggingService.LogInfo("No events to publish, returning");
-
-                return "OK";
-            }
-
-            this._loggingService.LogInfo($"Publishing {eventsToPublish.Count} event(s)");
-
-            await this._eventBridgeClient.PutEventsAsync(new PutEventsRequest()
-            {
-                Entries = eventsToPublish
-            });
 
             return "OK";
         }

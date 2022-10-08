@@ -6,8 +6,7 @@ namespace ApplicationIntegrationPatterns.Core.DataTransfer;
 
 public record ProductDTO
 {
-    [JsonConstructor]
-    private ProductDTO()
+    public ProductDTO()
     {
     }
     

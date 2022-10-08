@@ -28,6 +28,11 @@ variable "queue_name" {
   type        = string
 }
 
+variable "honeycomb_api_key" {
+  description = "API Key to pass to Honeycomb"
+  type = string
+}
+
 variable "lambda_handler" {
   description = "The Lambda handler, defined as classlib::namespace.class::method"
   type        = string

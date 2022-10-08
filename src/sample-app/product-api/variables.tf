@@ -15,3 +15,8 @@ variable "environment" {
   type        = string
   default = "dev"
 }
+
+variable "honeycomb_api_key" {
+  description = "API Key to pass to Honeycomb"
+  type = string
+}

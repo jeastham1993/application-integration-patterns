@@ -1,4 +1,6 @@
+using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Threading.Tasks;
 using System.Text.Json;
 using Amazon.Lambda.Core;
@@ -7,10 +9,11 @@ using ApplicationIntegrationPatterns.Core.Command;
 using Microsoft.Extensions.DependencyInjection;
 using ApplicationIntegrationPatterns.Core.Services;
 using ApplicationIntegrationPatterns.Implementations;
+using Shared;
 
 namespace DeleteProduct
 {
-    public class Function
+    public class Function : ApiGatewayTracedFunction
     {
         private readonly DeleteProductCommandHandler _handler;
         private readonly ILoggingService _loggingService;
@@ -18,6 +21,9 @@ namespace DeleteProduct
         public Function() : this(null, null)
         {
         }
+
+        public override string SERVICE_NAME => "DeleteProduct";
+        public override Func<APIGatewayProxyRequest, ILambdaContext, Task<APIGatewayProxyResponse>> Handler => FunctionHandler;
 
         internal Function(DeleteProductCommandHandler handler = null, ILoggingService loggingService = null)
         {
@@ -37,7 +43,11 @@ namespace DeleteProduct
                 return new APIGatewayProxyResponse
                 {
                     StatusCode = 400,
-                    Headers = new Dictionary<string, string> {{"Content-Type", "application/json"}}
+                    Headers = new Dictionary<string, string>
+                    {
+                        { "Content-Type", "application/json" },
+                        { "X_TRACE_ID", Activity.Current.TraceId.ToString() }
+                    }
                 };
             }
 
@@ -51,7 +61,11 @@ namespace DeleteProduct
             return new APIGatewayProxyResponse
             {
                 StatusCode = 200,
-                Headers = new Dictionary<string, string> {{"Content-Type", "application/json"}}
+                Headers = new Dictionary<string, string>
+                {
+                    { "Content-Type", "application/json" },
+                    { "X_TRACE_ID", Activity.Current.TraceId.ToString() }
+                }
             };
         }
     }

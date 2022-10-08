@@ -46,7 +46,11 @@ namespace CreateProduct
                 return new APIGatewayProxyResponse
                 {
                     StatusCode = 400,
-                    Headers = new Dictionary<string, string> { { "Content-Type", "application/json" } }
+                    Headers = new Dictionary<string, string>
+                    {
+                        { "Content-Type", "application/json" },
+                        { "X_TRACE_ID", Activity.Current.TraceId.ToString() }
+                    }
                 };
             }
 
@@ -63,7 +67,11 @@ namespace CreateProduct
             {
                 Body = JsonSerializer.Serialize(product),
                 StatusCode = 200,
-                Headers = new Dictionary<string, string> { { "Content-Type", "application/json" } }
+                Headers = new Dictionary<string, string>
+                {
+                    { "Content-Type", "application/json" },
+                    { "X_TRACE_ID", Activity.Current.TraceId.ToString() }
+                }
             };
         }
     }

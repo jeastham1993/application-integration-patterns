@@ -38,37 +38,11 @@ public abstract class SqsTracedFunction<TResponse> : TracedFunction<SQSEvent, TR
 
     public ActivityContext HydrateContextFromSnsMessage(SQSEvent.SQSMessage message)
     {
-        if (!message.Attributes.ContainsKey("AWSTraceHeader"))
-        {
-            return new ActivityContext();
-        }
-
         var snsData = JsonSerializer.Deserialize<SnsToSqsMessageBody>(message.Body);
         var wrappedMessage = JsonSerializer.Deserialize<MessageWrapper<dynamic>>(snsData.Message);
-
-        Console.WriteLine(wrappedMessage.Metadata.TraceParent);
-        Console.WriteLine(wrappedMessage.Metadata.ParentSpan);
-
+        
         var hydratedContext = new ActivityContext(ActivityTraceId.CreateFromString(wrappedMessage.Metadata.TraceParent.AsSpan()),
             ActivitySpanId.CreateFromString(wrappedMessage.Metadata.ParentSpan.AsSpan()), ActivityTraceFlags.Recorded);
-
-        return hydratedContext;
-    }
-
-    public ActivityContext HydrateContextFromMessage(SQSEvent.SQSMessage message)
-    {
-        if (!message.Attributes.ContainsKey("AWSTraceHeader"))
-        {
-            return new ActivityContext();
-        }
-
-        var attributeValue = message.Attributes["AWSTraceHeader"];
-
-        var traceID = attributeValue.Replace("Root=1-", "").Replace("-", "").Split(";")[0];
-        var spanId = attributeValue.Split(';')[1].Replace("Parent=", "");
-
-        var hydratedContext = new ActivityContext(ActivityTraceId.CreateFromString(traceID.AsSpan()),
-            ActivitySpanId.CreateFromString(spanId.AsSpan()), ActivityTraceFlags.Recorded);
 
         return hydratedContext;
     }

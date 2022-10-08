@@ -1,6 +1,7 @@
 using System.Net;
 using System.Text;
 using System.Text.Json;
+using Xunit.Abstractions;
 
 namespace ProductApi.IntegrationTests;
 
@@ -11,7 +12,13 @@ internal class CreateProductResponse
 
 public class IntegrationTests : IClassFixture<Setup>
 {
+    private readonly ITestOutputHelper output;
     private HttpClient _httpClient = new HttpClient();
+
+    public IntegrationTests(ITestOutputHelper output)
+    {
+        this.output = output;
+    }
 
     [Fact]
     public async void CreateAndRetrieve_ShouldReturnOk()
@@ -49,6 +56,8 @@ public class IntegrationTests : IClassFixture<Setup>
         var httpResponse = await this._httpClient.PostAsync(Setup.ApiUrl,
             new StringContent(JsonSerializer.Serialize(createProductBody), Encoding.UTF8, "application/json"));
         
+        this.output.WriteLine($"CreateProductTrace: {httpResponse.Headers.GetValues("X_TRACE_ID").FirstOrDefault()}");
+        
         Assert.Equal(HttpStatusCode.OK, httpResponse.StatusCode);
 
         var response =
@@ -64,10 +73,14 @@ public class IntegrationTests : IClassFixture<Setup>
 
         var updateProductResponse = await this._httpClient.PutAsync($"{Setup.ApiUrl}{response.ProductId}",
             new StringContent(JsonSerializer.Serialize(updateProductBody), Encoding.UTF8, "application/json"));
+        
+        this.output.WriteLine($"UpdateProductTrace: {updateProductResponse.Headers.GetValues("X_TRACE_ID").FirstOrDefault()}");
 
         Assert.Equal(HttpStatusCode.OK, updateProductResponse.StatusCode);
 
         var deleteProductResponse = await this._httpClient.DeleteAsync($"{Setup.ApiUrl}{response.ProductId}");
+        
+        this.output.WriteLine($"DeletedProductTrace: {deleteProductResponse.Headers.GetValues("X_TRACE_ID").FirstOrDefault()}");
 
         Assert.Equal(HttpStatusCode.OK, deleteProductResponse.StatusCode);
     }

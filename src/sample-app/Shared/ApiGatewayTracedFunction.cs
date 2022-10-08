@@ -2,6 +2,7 @@
 using System.Text;
 using Amazon.Lambda.APIGatewayEvents;
 using Amazon.Lambda.Core;
+using Amazon.SimpleSystemsManagement.Model.Internal.MarshallTransformations;
 using OpenTelemetry.Contrib.Extensions.AWSXRay.Trace;
 using OpenTelemetry.Trace;
 
@@ -84,7 +85,10 @@ public abstract class ApiGatewayTracedFunction : TracedFunction<APIGatewayProxyR
     {
         activity.AddTag("faas.trigger", "http");
         activity.AddTag("http.method", arg.HttpMethod);
-        activity.AddTag("http.user_agent", arg.Headers["User-Agent"]);
+
+        this.AddAttributeIfExists(ref activity, "http.user_agent", arg.Headers, "User-Agent");
+        this.AddAttributeIfExists(ref activity, "http.schema", arg.Headers, "x-forwarded-proto");
+        
         if (arg.Headers.ContainsKey("Content-Length"))
         {
             activity.AddTag("http.request_content_length", arg.Headers["Content-Length"]);    
@@ -97,11 +101,6 @@ public abstract class ApiGatewayTracedFunction : TracedFunction<APIGatewayProxyR
         activity.AddTag("http.route", arg.Resource);
         activity.AddTag("http.target", arg.Path);
 
-        if (arg.Headers.ContainsKey("x-forwarded-proto"))
-        {
-            activity.AddTag("http.scheme", arg.Headers["x-forwarded-proto"]);   
-        }
-
         foreach (var header in arg.Headers)
         {
             if (header.Key == "User-Agent" || header.Key == "Content-Length" || header.Key == "x-forwarded-proto")
@@ -113,5 +112,13 @@ public abstract class ApiGatewayTracedFunction : TracedFunction<APIGatewayProxyR
         }
 
         return true;
+    }
+
+    private void AddAttributeIfExists(ref Activity activity, string tagName, IDictionary<string, string> headers, string keyName)
+    {
+        if (headers.ContainsKey(keyName))
+        {
+            activity.AddTag(tagName, headers[keyName].ToString());   
+        }
     }
 }

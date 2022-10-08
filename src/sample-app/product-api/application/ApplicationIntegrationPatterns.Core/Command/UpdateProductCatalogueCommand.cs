@@ -3,6 +3,7 @@ using ApplicationIntegrationPatterns.Core.Models;
 using ApplicationIntegrationPatterns.Core.Services;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -16,14 +17,14 @@ public record UpdateProductCatalogueCommand
     internal bool ValidateProperties() => this.Product != null;
 }
 
-
 public class UpdateProductCatalogueCommandHandler
 {
     private readonly IProductRepository _productRepository;
     private readonly ILoggingService _loggingService;
     private readonly IProductCatalogueService _productCatalogueService;
 
-    public UpdateProductCatalogueCommandHandler(IProductRepository productRepository, ILoggingService loggingService, IProductCatalogueService productCatalogueService)
+    public UpdateProductCatalogueCommandHandler(IProductRepository productRepository, ILoggingService loggingService,
+        IProductCatalogueService productCatalogueService)
     {
         _productRepository = productRepository;
         _loggingService = loggingService;
@@ -49,7 +50,10 @@ public class UpdateProductCatalogueCommandHandler
             return;
         }
 
-        await this._productCatalogueService.UpdateProduct(product);
+        using (var activity = Activity.Current?.Source.StartActivity("Updaing product catalogue"))
+        {
+            await this._productCatalogueService.UpdateProduct(product);
+        }
 
         this._loggingService.LogInfo("Product catalogue updated");
 

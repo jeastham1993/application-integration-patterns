@@ -1,74 +1,51 @@
 ﻿using System.Diagnostics;
 using System.Text.Json;
 using Amazon.Lambda.Core;
-using Amazon.Lambda.SQSEvents;
+using Amazon.Lambda.DynamoDBEvents;
+using Amazon.Lambda.DynamoDBEvents;
 using ApplicationIntegrationPatterns.Implementations.Models;
 using Shared.Messaging;
 
 namespace Shared;
 
-public abstract class SqsTracedFunction<TResponse> : TracedFunction<SQSEvent, TResponse>
+public abstract class DynamoDbStreamTracedFunction<TResponse> : TracedFunction<DynamoDBEvent, TResponse>
 {
-    public override Func<SQSEvent, ILambdaContext, bool> ContextPropagator => SqsPropogator;
+    public override Func<DynamoDBEvent, ILambdaContext, bool> ContextPropagator => DynamoDbPropagator;
     
-    public override Func<SQSEvent, Activity, bool> AddRequestAttributes => SqsRequestAttributeLoader;
+    public override Func<DynamoDBEvent, Activity, bool> AddRequestAttributes => DynamoDbRequestAttributeLoader;
     
-    public override Func<TResponse, Activity, bool> AddResponseAttributes => SqsResponseAttributeLoader;
+    public override Func<TResponse, Activity, bool> AddResponseAttributes => DynamoDbResponseAttributeLoader;
 
-    private bool SqsPropogator(SQSEvent arg, ILambdaContext context)
+    private bool DynamoDbPropagator(DynamoDBEvent arg, ILambdaContext context)
     {
         this.Context = new ActivityContext();
         return true;
     }
     
-    private bool SqsRequestAttributeLoader(SQSEvent arg, Activity activity)
+    private bool DynamoDbRequestAttributeLoader(DynamoDBEvent arg, Activity activity)
     {
-        activity.AddTag("faas.trigger", "pubsub");
+        activity.AddTag("faas.trigger", "stream");
         activity.AddTag("messaging.operation", "process");
-        activity.AddTag("messaging.system", "AmazonSQS");
-        activity.AddTag("messaging.destination_kind", "queue");
+        activity.AddTag("messaging.system", "DynamoDB");
+        activity.AddTag("messaging.destination_kind", "stream");
 
         return true;
     }
     
-    private bool SqsResponseAttributeLoader(TResponse arg, Activity activity)
+    private bool DynamoDbResponseAttributeLoader(TResponse arg, Activity activity)
     {
         return true;
     }
 
-    public ActivityContext HydrateContextFromSnsMessage(SQSEvent.SQSMessage message)
+    public ActivityContext HydrateContextFromStreamRecord(DynamoDBEvent.DynamodbStreamRecord message)
     {
-        if (!message.Attributes.ContainsKey("AWSTraceHeader"))
+        if (!message.Dynamodb.NewImage.ContainsKey("TraceParent"))
         {
             return new ActivityContext();
         }
 
-        var snsData = JsonSerializer.Deserialize<SnsToSqsMessageBody>(message.Body);
-        var wrappedMessage = JsonSerializer.Deserialize<MessageWrapper<dynamic>>(snsData.Message);
-
-        Console.WriteLine(wrappedMessage.Metadata.TraceParent);
-        Console.WriteLine(wrappedMessage.Metadata.ParentSpan);
-
-        var hydratedContext = new ActivityContext(ActivityTraceId.CreateFromString(wrappedMessage.Metadata.TraceParent.AsSpan()),
-            ActivitySpanId.CreateFromString(wrappedMessage.Metadata.ParentSpan.AsSpan()), ActivityTraceFlags.Recorded);
-
-        return hydratedContext;
-    }
-
-    public ActivityContext HydrateContextFromMessage(SQSEvent.SQSMessage message)
-    {
-        if (!message.Attributes.ContainsKey("AWSTraceHeader"))
-        {
-            return new ActivityContext();
-        }
-
-        var attributeValue = message.Attributes["AWSTraceHeader"];
-
-        var traceID = attributeValue.Replace("Root=1-", "").Replace("-", "").Split(";")[0];
-        var spanId = attributeValue.Split(';')[1].Replace("Parent=", "");
-
-        var hydratedContext = new ActivityContext(ActivityTraceId.CreateFromString(traceID.AsSpan()),
-            ActivitySpanId.CreateFromString(spanId.AsSpan()), ActivityTraceFlags.Recorded);
+        var hydratedContext = new ActivityContext(ActivityTraceId.CreateFromString(message.Dynamodb.NewImage["TraceParent"].S),
+            ActivitySpanId.CreateFromString(message.Dynamodb.NewImage["ParentSpan"].S.AsSpan()), ActivityTraceFlags.Recorded);
 
         return hydratedContext;
     }

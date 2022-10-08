@@ -40,6 +40,7 @@ module "create_product_lambda" {
     "POWERTOOLS_SERVICE_NAME"      = "product-api"
     "POWERTOOLS_METRICS_NAMESPACE" = "product-api"
   }
+  honeycomb_api_key = var.honeycomb_api_key
 }
 
 module "create_product_lambda_api" {
@@ -80,6 +81,7 @@ module "get_product_lambda" {
     "POWERTOOLS_SERVICE_NAME"      = "product-api"
     "POWERTOOLS_METRICS_NAMESPACE" = "product-api"
   }
+  honeycomb_api_key = var.honeycomb_api_key
 }
 
 module "get_product_lambda_api" {
@@ -115,6 +117,7 @@ module "update_product_lambda" {
     "POWERTOOLS_SERVICE_NAME"      = "product-api"
     "POWERTOOLS_METRICS_NAMESPACE" = "product-api"
   }
+  honeycomb_api_key = var.honeycomb_api_key
 }
 
 module "update_product_lambda_api" {
@@ -150,6 +153,7 @@ module "delete_product_lambda" {
     "POWERTOOLS_SERVICE_NAME"      = "product-api"
     "POWERTOOLS_METRICS_NAMESPACE" = "product-api"
   }
+  honeycomb_api_key = var.honeycomb_api_key
 }
 
 module "delete_product_lambda_api" {

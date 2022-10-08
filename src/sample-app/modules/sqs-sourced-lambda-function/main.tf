@@ -34,7 +34,7 @@ resource "aws_lambda_function" "function" {
     for_each = length(var.environment_variables) > 0 ? [1] : []
     content {
       variables = merge(var.environment_variables, {
-      HONEYCOMB_API_KEY = ""
+      HONEYCOMB_API_KEY = var.honeycomb_api_key
     })
     }
   }

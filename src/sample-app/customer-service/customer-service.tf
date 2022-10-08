@@ -38,7 +38,7 @@ resource "aws_sqs_queue_policy" "test" {
       "Principal": {
         "Service": "events.amazonaws.com"
       },
-      "Action": "sqs:SendMessageaa",
+      "Action": "sqs:SendMessage",
       "Resource": "${module.customer_service_product_notifications.queue_arn}",
       "Condition": {
         "ArnEquals": {

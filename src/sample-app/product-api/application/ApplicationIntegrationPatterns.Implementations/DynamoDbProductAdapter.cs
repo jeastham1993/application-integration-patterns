@@ -2,6 +2,7 @@
 using ApplicationIntegrationPatterns.Core.Models;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
 using System.Text;
@@ -22,6 +23,8 @@ namespace ApplicationIntegrationPatterns.Implementations
             {
                 N = product.Price.ToString(CultureInfo.InvariantCulture)
             });
+            item.Add("TraceParent", new AttributeValue(Activity.Current.TraceId.ToString()));
+            item.Add("ParentSpan", new AttributeValue(Activity.Current.SpanId.ToString()));
 
             var pricingHistory = new Dictionary<string, AttributeValue>();
 
@@ -54,6 +57,17 @@ namespace ApplicationIntegrationPatterns.Implementations
                 Action = AttributeAction.PUT,
                 Value = new AttributeValue(product.Description)
             });
+            item.Add("TraceParent", new AttributeValueUpdate()
+            {
+                Action = AttributeAction.PUT,
+                Value = new AttributeValue(Activity.Current.TraceId.ToString())
+            });
+            item.Add("ParentSpan", new AttributeValueUpdate()
+            {
+                Action = AttributeAction.PUT,
+                Value = new AttributeValue(Activity.Current.SpanId.ToString())
+            });
+            
             item.Add("Price", new AttributeValueUpdate()
             {
                 Action = AttributeAction.PUT,

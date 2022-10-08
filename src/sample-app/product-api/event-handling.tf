@@ -25,6 +25,7 @@ module "dynamo_db_stream_handler" {
     "POWERTOOLS_SERVICE_NAME"      = "product-api"
     "POWERTOOLS_METRICS_NAMESPACE" = "product-api"
   }
+  honeycomb_api_key = var.honeycomb_api_key
 }
 
 resource "aws_iam_role_policy_attachment" "dynamo_db_stream_handler_allow_stream_read" {
@@ -105,6 +106,7 @@ module "update_product_catalogue_lambda" {
     "POWERTOOLS_SERVICE_NAME"      = "product-api"
     "POWERTOOLS_METRICS_NAMESPACE" = "product-api"
   }
+  honeycomb_api_key = var.honeycomb_api_key
 }
 
 resource "aws_iam_role_policy_attachment" "update_product_catalogue_lambda_dynamo_db_read" {
@@ -169,6 +171,7 @@ module "external_event_publishing_lambda" {
     "POWERTOOLS_METRICS_NAMESPACE" = "product-api"
     "EVENT_BUS_PARAMETER"          = "/${var.environment}/shared/event_bus_name"
   }
+  honeycomb_api_key = var.honeycomb_api_key
 }
 
 resource "aws_iam_role_policy_attachment" "external_event_publishing_lambda_cw_metrics" {

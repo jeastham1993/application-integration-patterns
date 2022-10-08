@@ -27,3 +27,8 @@ variable "environment_variables" {
   description = "Environment variables to pass to the Lambda function"
   type = map(string)
 }
+
+variable "honeycomb_api_key" {
+  description = "API Key to pass to Honeycomb"
+  type = string
+}

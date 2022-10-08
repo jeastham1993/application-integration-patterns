@@ -19,6 +19,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\..\Shared\Shared.csproj" />
     <ProjectReference Include="..\ApplicationIntegrationPatterns.Core\ApplicationIntegrationPatterns.Core.csproj" />
     <ProjectReference Include="..\ApplicationIntegrationPatterns.Implementations\ApplicationIntegrationPatterns.Implementations.csproj" />
   </ItemGroup>

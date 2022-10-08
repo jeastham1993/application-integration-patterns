@@ -7,10 +7,13 @@ using ApplicationIntegrationPatterns.Core.Command;
 using Microsoft.Extensions.DependencyInjection;
 using ApplicationIntegrationPatterns.Core.Services;
 using ApplicationIntegrationPatterns.Implementations;
-using ApplicationIntegrationPatterns.Core.Events;
 using Amazon.Lambda.SQSEvents;
+using ApplicationIntegrationPatterns.Core.DataTransfer;
 using ApplicationIntegrationPatterns.Implementations.Models;
+using Microsoft.AspNetCore.Http.Connections;
+using OpenTelemetry.Trace;
 using Shared;
+using Shared.Messaging;
 
 namespace UpdateProductCatalogue
 {
@@ -23,45 +26,58 @@ namespace UpdateProductCatalogue
         {
         }
 
+        public override string SERVICE_NAME => "UpdateProductCatalogue";
+        public override Func<SQSEvent, ILambdaContext, Task<string>> Handler => FunctionHandler;
+
         internal Function(UpdateProductCatalogueCommandHandler handler = null, ILoggingService loggingService = null)
         {
             Startup.ConfigureServices();
-            
+
             this._handler = handler ?? Startup.Services.GetRequiredService<UpdateProductCatalogueCommandHandler>();
             this._loggingService = loggingService ?? Startup.Services.GetRequiredService<ILoggingService>();
         }
-        
+
         public async Task<string> FunctionHandler(SQSEvent evt, ILambdaContext context)
         {
-            this._loggingService.LogInfo("Received request to update product catalogue");
-
             var catalogueUpdated = 0;
 
             foreach (var record in evt.Records)
             {
                 var hydratedContext = this.HydrateContextFromSnsMessage(record);
-                
-                this._loggingService.LogInfo($"Processing {record.Body}");
-                
-                using var activity =
-                    Activity.Current.Source.StartActivity("UpdatingProductCatalogue", ActivityKind.Consumer, parentContext: hydratedContext).AddSqsAttributes(record);
 
-                var snsData = JsonSerializer.Deserialize<SnsToSqsMessageBody>(record.Body);
-
-                var eventData = JsonSerializer.Deserialize<ProductCreatedEvent>(snsData.Message);
-
-                await this._handler.Handle(new UpdateProductCatalogueCommand()
+                using (var activity =
+                       Activity.Current.Source
+                           .StartActivity("UpdatingProductCatalogue", ActivityKind.Consumer, parentContext: hydratedContext)
+                           .AddSqsAttributes(record))
                 {
-                    Product = eventData.Product
-                });
+                    activity.AddTag("message.messages-in-batch", evt.Records.Count);
+                    
+                    var snsData = JsonSerializer.Deserialize<SnsToSqsMessageBody>(record.Body);
 
-                catalogueUpdated++;
+                    this._loggingService.LogInfo(record.Body);
+
+                    var eventData = JsonSerializer.Deserialize<MessageWrapper<ProductDTO>>(snsData.Message);
+
+                    this._loggingService.LogInfo(snsData.Message);
+
+                    using (var updateCatalogueActivity = Activity.Current.Source.StartActivity("UpdateProductCatalogueCommand",
+                               ActivityKind.Consumer, hydratedContext))
+                    {
+                        updateCatalogueActivity.SetParentId(activity.TraceId, activity.SpanId);
+                        
+                        updateCatalogueActivity.AddTag("message.messages-processed-prior", catalogueUpdated.ToString());
+
+                        await this._handler.Handle(new UpdateProductCatalogueCommand()
+                        {
+                            Product = eventData.Data
+                        });
+                    }
+
+                    catalogueUpdated++;
+                }
             }
 
             return "OK";
         }
-
-        public override string SERVICE_NAME => "UpdateProductCatalogue";
-        public override Func<SQSEvent, ILambdaContext, Task<string>> Handler => FunctionHandler;
     }
 }
