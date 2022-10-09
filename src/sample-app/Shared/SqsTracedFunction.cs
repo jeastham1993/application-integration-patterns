@@ -7,13 +7,16 @@ using Shared.Messaging;
 
 namespace Shared;
 
-public abstract class SqsTracedFunction<TResponse> : TracedFunction<SQSEvent, TResponse>
+public abstract class SqsTracedFunction<TResponse> : BatchTracedFunction<SQSEvent, TResponse, SQSEvent.SQSMessage>
 {
-    public override Func<SQSEvent, ILambdaContext, bool> ContextPropagator => SqsPropogator;
-    
-    public override Func<SQSEvent, Activity, bool> AddRequestAttributes => SqsRequestAttributeLoader;
+    public override Func<SQSEvent.SQSMessage, Activity, bool> AddRequestAttributes => SqsRequestAttributeLoader;
     
     public override Func<TResponse, Activity, bool> AddResponseAttributes => SqsResponseAttributeLoader;
+
+    public override Func<SQSEvent.SQSMessage, ActivityContext> HydrateMessageWithContext =>
+        HydrateContextFromSnsMessage;
+    
+    public override Func<SQSEvent, ILambdaContext, Task<TResponse>> Handler => FunctionHandler;
 
     private bool SqsPropogator(SQSEvent arg, ILambdaContext context)
     {
@@ -21,7 +24,7 @@ public abstract class SqsTracedFunction<TResponse> : TracedFunction<SQSEvent, TR
         return true;
     }
     
-    private bool SqsRequestAttributeLoader(SQSEvent arg, Activity activity)
+    private bool SqsRequestAttributeLoader(SQSEvent.SQSMessage arg, Activity activity)
     {
         activity.AddTag("faas.trigger", "pubsub");
         activity.AddTag("messaging.operation", "process");
@@ -36,8 +39,20 @@ public abstract class SqsTracedFunction<TResponse> : TracedFunction<SQSEvent, TR
         return true;
     }
 
+    public async Task<string> FunctionHandler(SQSEvent evt, ILambdaContext context)
+    {
+        foreach (var record in evt.Records)
+        {
+            await this.HandleMessage(record, context);
+        }
+
+        return "OK";
+    }
+
     public ActivityContext HydrateContextFromSnsMessage(SQSEvent.SQSMessage message)
     {
+        this.ActivitySource = new ActivitySource(SERVICE_NAME);
+        
         var snsData = JsonSerializer.Deserialize<SnsToSqsMessageBody>(message.Body);
         var wrappedMessage = JsonSerializer.Deserialize<MessageWrapper<dynamic>>(snsData.Message);
         

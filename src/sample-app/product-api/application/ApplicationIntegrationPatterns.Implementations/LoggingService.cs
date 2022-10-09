@@ -13,44 +13,65 @@ namespace ApplicationIntegrationPatterns.Implementations
     internal class LoggingService : ILoggingService
     {
         public void LogInfo(string message) {
-            Logger.AppendKey("TraceParent", Activity.Current.TraceId.ToString());
-            Logger.AppendKey("Span", Activity.Current.SpanId.ToString());
+            if (Activity.Current != null)
+            {
+                Logger.AppendKey("TraceParent", Activity.Current.TraceId.ToString());
+                Logger.AppendKey("Span", Activity.Current.SpanId.ToString());   
+            }
             Logger.LogInformation(message);
         }
 
         public void LogWarning(Exception ex) {
-            Logger.AppendKey("TraceParent", Activity.Current.TraceId.ToString());
-            Logger.AppendKey("Span", Activity.Current.SpanId.ToString());
+            if (Activity.Current != null)
+            {
+                Logger.AppendKey("TraceParent", Activity.Current.TraceId.ToString());
+                Logger.AppendKey("Span", Activity.Current.SpanId.ToString());   
+            }
             Logger.LogWarning(ex);
         }
 
         public void LogWarning(string message) {
-            Logger.AppendKey("TraceParent", Activity.Current.TraceId.ToString());
-            Logger.AppendKey("Span", Activity.Current.SpanId.ToString());
+            if (Activity.Current != null)
+            {
+                Logger.AppendKey("TraceParent", Activity.Current.TraceId.ToString());
+                Logger.AppendKey("Span", Activity.Current.SpanId.ToString());   
+            }
             Logger.LogWarning(message);
         }
 
         public void LogWarning(Exception ex, string message) {
-            Logger.AppendKey("TraceParent", Activity.Current.TraceId.ToString());
-            Logger.AppendKey("Span", Activity.Current.SpanId.ToString());
+            if (Activity.Current != null)
+            {
+                Logger.AppendKey("TraceParent", Activity.Current.TraceId.ToString());
+                Logger.AppendKey("Span", Activity.Current.SpanId.ToString());   
+            }
             Logger.LogWarning(ex, message);
         }
 
         public void LogError(Exception ex) {
-            Logger.AppendKey("TraceParent", Activity.Current.TraceId.ToString());
-            Logger.AppendKey("Span", Activity.Current.SpanId.ToString());
+            if (Activity.Current != null)
+            {
+                Logger.AppendKey("TraceParent", Activity.Current.TraceId.ToString());
+                Logger.AppendKey("Span", Activity.Current.SpanId.ToString());   
+            }
             Logger.LogError(ex);
         } 
 
         public void LogError(string message) {
-            Logger.AppendKey("TraceParent", Activity.Current.TraceId.ToString());
-            Logger.AppendKey("Span", Activity.Current.SpanId.ToString());
+            if (Activity.Current != null)
+            {
+                Logger.AppendKey("TraceParent", Activity.Current.TraceId.ToString());
+                Logger.AppendKey("Span", Activity.Current.SpanId.ToString());   
+            }
             Logger.LogError(message);
         }
 
         public void LogError(Exception ex, string message) {
-            Logger.AppendKey("TraceParent", Activity.Current.TraceId.ToString());
-            Logger.AppendKey("Span", Activity.Current.SpanId.ToString());
+            if (Activity.Current != null)
+            {
+                Logger.AppendKey("TraceParent", Activity.Current.TraceId.ToString());
+                Logger.AppendKey("Span", Activity.Current.SpanId.ToString());   
+            }
             Logger.LogError(ex, message);
         }
     }

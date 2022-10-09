@@ -34,6 +34,9 @@ namespace ExternalEventPublisher
         public Function() : this(null, null, null)
         {
         }
+        
+        public override string SERVICE_NAME => "ExternalEventPublisher";
+        public override Func<SQSEvent.SQSMessage, ILambdaContext, Task> MessageProcessor => MessageHandler;
 
         internal Function(AmazonEventBridgeClient eventBridgeClient = null, ILoggingService loggingService = null,
             SystemParameters _parameters = null)
@@ -48,53 +51,42 @@ namespace ExternalEventPublisher
                 .Result;
         }
 
-        public async Task<string> FunctionHandler(SQSEvent evt, ILambdaContext context)
+        public async Task MessageHandler(SQSEvent.SQSMessage message, ILambdaContext context)
         {
-            var eventsToPublish = new List<PutEventsRequestEntry>(evt.Records.Count);
+            this._loggingService.LogInfo($"MessageHandler: {message.MessageId}");
 
-            foreach (var record in evt.Records)
+            using (var activity =
+                   Activity.Current.Source
+                       .StartActivity("PublishExternalEvent", ActivityKind.Consumer)
+                       .AddSqsAttributes(message))
             {
-                var hydratedContext = this.HydrateContextFromSnsMessage(record);
+                var snsData = JsonSerializer.Deserialize<SnsToSqsMessageBody>(message.Body);
 
-                using (var activity =
-                       Activity.Current.Source
-                           .StartActivity("PublishExternalEvent", ActivityKind.Consumer, parentContext: hydratedContext)
-                           .AddSqsAttributes(record))
+                this._loggingService.LogInfo(message.Body);
+
+                var eventPayload = snsData.Message;
+                var eventType = snsData.MessageAttributes["EVENT_TYPE"].Value;
+
+                this._loggingService.LogInfo($"Adding event from {eventType}");
+
+                using (var publishActivity = Activity.Current.Source.StartActivity("EventBridgePublish",
+                           ActivityKind.Consumer))
                 {
-                    var snsData = JsonSerializer.Deserialize<SnsToSqsMessageBody>(record.Body);
-
-                    this._loggingService.LogInfo(record.Body);
-
-                    var eventPayload = snsData.Message;
-                    var eventType = snsData.MessageAttributes["EVENT_TYPE"].Value;
-
-                    this._loggingService.LogInfo($"Adding event from {eventType}");
-
-                    eventsToPublish.Add(new PutEventsRequestEntry()
+                    await this._eventBridgeClient.PutEventsAsync(new PutEventsRequest()
                     {
-                        Detail = eventPayload,
-                        Source = "product-api",
-                        DetailType = eventType,
-                        EventBusName = _eventBusName
-                    });
-
-                    using (var publishActivity = Activity.Current.Source.StartActivity("EventBridgePublish",
-                               ActivityKind.Consumer, hydratedContext))
-                    {
-                        await this._eventBridgeClient.PutEventsAsync(new PutEventsRequest()
+                        Entries = new List<PutEventsRequestEntry>()
                         {
-                            Entries = eventsToPublish
-                        });
-                    }
-
-                    eventsToPublish.Clear();
+                            new PutEventsRequestEntry()
+                            {
+                                Detail = eventPayload,
+                                Source = "product-api",
+                                DetailType = eventType,
+                                EventBusName = _eventBusName
+                            }
+                        }
+                    });
                 }
             }
-
-            return "OK";
         }
-
-        public override string SERVICE_NAME => "ExternalEventPublisher";
-        public override Func<SQSEvent, ILambdaContext, Task<string>> Handler => FunctionHandler;
     }
 }

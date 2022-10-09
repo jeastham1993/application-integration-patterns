@@ -14,8 +14,11 @@ public record MessageMetadata
 {
     public MessageMetadata()
     {
-        this.TraceParent = Activity.Current.TraceId.ToString();
-        this.ParentSpan = Activity.Current.SpanId.ToString();
+        if (Activity.Current != null)
+        {
+            this.TraceParent = Activity.Current.TraceId.ToString();
+            this.ParentSpan = Activity.Current.SpanId.ToString();   
+        }
     }
     
     [JsonPropertyName("traceparent")]

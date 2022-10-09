@@ -29,6 +29,8 @@ namespace UpdateProductCatalogue
         public override string SERVICE_NAME => "UpdateProductCatalogue";
         public override Func<SQSEvent, ILambdaContext, Task<string>> Handler => FunctionHandler;
 
+        public override Func<SQSEvent.SQSMessage, ILambdaContext, Task> MessageProcessor => MessageHandler;
+
         internal Function(UpdateProductCatalogueCommandHandler handler = null, ILoggingService loggingService = null)
         {
             Startup.ConfigureServices();
@@ -39,45 +41,39 @@ namespace UpdateProductCatalogue
 
         public async Task<string> FunctionHandler(SQSEvent evt, ILambdaContext context)
         {
-            var catalogueUpdated = 0;
-
             foreach (var record in evt.Records)
             {
-                var hydratedContext = this.HydrateContextFromSnsMessage(record);
-
-                using (var activity =
-                       Activity.Current.Source
-                           .StartActivity("UpdatingProductCatalogue", ActivityKind.Consumer, parentContext: hydratedContext)
-                           .AddSqsAttributes(record))
-                {
-                    activity.AddTag("message.messages-in-batch", evt.Records.Count);
-                    
-                    var snsData = JsonSerializer.Deserialize<SnsToSqsMessageBody>(record.Body);
-
-                    this._loggingService.LogInfo(record.Body);
-
-                    var eventData = JsonSerializer.Deserialize<MessageWrapper<ProductDTO>>(snsData.Message);
-
-                    this._loggingService.LogInfo(snsData.Message);
-
-                    using (var updateCatalogueActivity = Activity.Current.Source.StartActivity("UpdateProductCatalogueCommand",
-                               ActivityKind.Consumer, hydratedContext))
-                    {
-                        updateCatalogueActivity.SetParentId(activity.TraceId, activity.SpanId);
-                        
-                        updateCatalogueActivity.AddTag("message.messages-processed-prior", catalogueUpdated.ToString());
-
-                        await this._handler.Handle(new UpdateProductCatalogueCommand()
-                        {
-                            Product = eventData.Data
-                        });
-                    }
-
-                    catalogueUpdated++;
-                }
+                await this.MessageProcessor(record, context);
             }
 
             return "OK";
+        }
+
+        public async Task MessageHandler(SQSEvent.SQSMessage message, ILambdaContext context)
+        {
+            using (var activity =
+                   Activity.Current.Source
+                       .StartActivity("UpdatingProductCatalogue", ActivityKind.Consumer)
+                       .AddSqsAttributes(message))
+            {
+                var snsData = JsonSerializer.Deserialize<SnsToSqsMessageBody>(message.Body);
+
+                this._loggingService.LogInfo(message.Body);
+
+                var eventData = JsonSerializer.Deserialize<MessageWrapper<ProductDTO>>(snsData.Message);
+
+                this._loggingService.LogInfo(snsData.Message);
+
+                using (var updateCatalogueActivity = Activity.Current.Source.StartActivity(
+                           "UpdateProductCatalogueCommand",
+                           ActivityKind.Consumer))
+                {
+                    await this._handler.Handle(new UpdateProductCatalogueCommand()
+                    {
+                        Product = eventData.Data
+                    });
+                }
+            }
         }
     }
 }

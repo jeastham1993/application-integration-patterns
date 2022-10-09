@@ -8,13 +8,15 @@ using Shared.Messaging;
 
 namespace Shared;
 
-public abstract class DynamoDbStreamTracedFunction<TResponse> : TracedFunction<DynamoDBEvent, TResponse>
+public abstract class DynamoDbStreamTracedFunction<TResponse> : BatchTracedFunction<DynamoDBEvent, TResponse, DynamoDBEvent.DynamodbStreamRecord>
 {
-    public override Func<DynamoDBEvent, ILambdaContext, bool> ContextPropagator => DynamoDbPropagator;
+    public override Func<DynamoDBEvent.DynamodbStreamRecord, Activity, bool> AddRequestAttributes => DynamoDbRequestAttributeLoader;
     
-    public override Func<DynamoDBEvent, Activity, bool> AddRequestAttributes => DynamoDbRequestAttributeLoader;
+    public override Func<DynamoDBEvent, ILambdaContext, Task<TResponse>> Handler => FunctionHandler;
     
     public override Func<TResponse, Activity, bool> AddResponseAttributes => DynamoDbResponseAttributeLoader;
+
+    public override Func<DynamoDBEvent.DynamodbStreamRecord, ActivityContext> HydrateMessageWithContext => HydrateContextFromStreamRecord;
 
     private bool DynamoDbPropagator(DynamoDBEvent arg, ILambdaContext context)
     {
@@ -22,7 +24,7 @@ public abstract class DynamoDbStreamTracedFunction<TResponse> : TracedFunction<D
         return true;
     }
     
-    private bool DynamoDbRequestAttributeLoader(DynamoDBEvent arg, Activity activity)
+    private bool DynamoDbRequestAttributeLoader(DynamoDBEvent.DynamodbStreamRecord arg, Activity activity)
     {
         activity.AddTag("faas.trigger", "stream");
         activity.AddTag("messaging.operation", "process");
@@ -48,5 +50,15 @@ public abstract class DynamoDbStreamTracedFunction<TResponse> : TracedFunction<D
             ActivitySpanId.CreateFromString(message.Dynamodb.NewImage["ParentSpan"].S.AsSpan()), ActivityTraceFlags.Recorded);
 
         return hydratedContext;
+    }
+
+    public async Task<string> FunctionHandler(DynamoDBEvent dynamoStreamEvent, ILambdaContext context)
+    {
+        foreach (var evt in dynamoStreamEvent.Records)
+        {
+            await this.HandleMessage(evt, context);
+        }
+
+        return "OK";
     }
 }

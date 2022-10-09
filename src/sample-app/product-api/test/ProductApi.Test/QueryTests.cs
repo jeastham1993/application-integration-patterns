@@ -25,7 +25,7 @@ public class QueryTests
     }
     
     [Fact]
-    public async Task CanCreateQuery_ShouldSetProperty()
+    public void CanCreateQuery_ShouldSetProperty()
     {
         var testProduct = Product.Create("Test product", 10);
 
