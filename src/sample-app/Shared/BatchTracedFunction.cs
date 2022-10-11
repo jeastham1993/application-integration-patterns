@@ -1,6 +1,7 @@
 ﻿using System.Diagnostics;
 using Amazon.Lambda.APIGatewayEvents;
 using Amazon.Lambda.Core;
+using AWS.Lambda.Powertools.Logging;
 using Honeycomb.OpenTelemetry;
 using OpenTelemetry;
 using OpenTelemetry.Resources;
@@ -52,10 +53,14 @@ public abstract class BatchTracedFunction<TRequestType, TResponseType, TMessageT
     {
             try
             {
+                Logger.LogInformation("Processing batched messages using traced function handler");
+                
                 TResponseType result = default;
                 Func<Task> action = async () => result = await Handler(request, context);
 
                 await action();
+
+                Logger.LogInformation("Executed action");
 
                 return result;
             }
@@ -66,6 +71,8 @@ public abstract class BatchTracedFunction<TRequestType, TResponseType, TMessageT
                 
                 Activity.Current.SetStatus(Status.Error);
                 Activity.Current.RecordException(e);
+                
+                Logger.LogError(e, "Failure processing batch of messages");
 
                 this._tracerProvider.ForceFlush();
 
@@ -75,6 +82,8 @@ public abstract class BatchTracedFunction<TRequestType, TResponseType, TMessageT
             }
             finally
             {
+                Logger.LogInformation("Finalising OTEL");
+                
                 if (Activity.Current != null)
                     Activity.Current.Stop();
 

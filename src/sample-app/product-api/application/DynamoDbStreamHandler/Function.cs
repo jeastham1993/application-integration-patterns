@@ -41,75 +41,78 @@ namespace DynamoDbStreamHandler
 
         public async Task MessageHandler(DynamoDBEvent.DynamodbStreamRecord record, ILambdaContext context)
         {
-            using var span = Activity.Current.Source
-                .StartActivity("HandlingDynamoDbStream", ActivityKind.Consumer)
-                .AddDynamoDbAttributes(record);
+            this._loggingService.LogInfo("Starting message handling");
 
-            var topicName = "";
-            var eventType = "";
-            ProductDTO productData = null;
-
-            using var documentAttributeMapping = Activity.Current.Source.StartActivity("MappingDocumentAttributes");
-
-            this._loggingService.LogInfo($"Processing {record.EventName}");
-
-            switch (record.EventName.ToString())
+            using (var span = Activity.Current.Source
+                       .StartActivity("HandlingDynamoDbStream", ActivityKind.Consumer)
+                       .AddDynamoDbAttributes(record))
             {
-                case "INSERT":
-                    var insertRecordAsDocument = Document.FromAttributeMap(record.Dynamodb.NewImage);
-                    topicName = CREATED_TOPIC_ARN;
-                    eventType = "product-created";
-                    productData =
-                        new ProductDTO(
-                            DynamoDbProductAdapter.DynamoDbItemToProduct(insertRecordAsDocument.ToAttributeMap()));
-                    break;
-                case "MODIFY":
-                    var updateRecordAsDocument = Document.FromAttributeMap(record.Dynamodb.NewImage);
-                    topicName = UPDATED_TOPIC_ARN;
-                    eventType = "product-updated";
-                    productData =
-                        new ProductDTO(
-                            DynamoDbProductAdapter.DynamoDbItemToProduct(updateRecordAsDocument.ToAttributeMap()));
-                    break;
-                case "REMOVE":
-                    var deleteRecordAsDocument = Document.FromAttributeMap(record.Dynamodb.OldImage);
-                    topicName = DELETED_TOPIC_ARN;
-                    eventType = "product-deleted";
-                    productData =
-                        new ProductDTO(
-                            DynamoDbProductAdapter.DynamoDbItemToProduct(deleteRecordAsDocument.ToAttributeMap()));
-                    break;
-            }
+                this._loggingService.LogInfo("Created span");
 
-            if (string.IsNullOrEmpty(topicName))
-            {
-                documentAttributeMapping.RecordException(new Exception("Topic is not found"));
+                var topicName = "";
+                var eventType = "";
+                ProductDTO productData = null;
 
-                this._loggingService.LogWarning("Invalid event type");
+                using var documentAttributeMapping = Activity.Current.Source.StartActivity("MappingDocumentAttributes");
 
-                return;
-            }
+                this._loggingService.LogInfo($"Processing {record.EventName}");
 
-            documentAttributeMapping.Dispose();
-
-            this._loggingService.LogInfo($"Publishing event data to {topicName} with type {eventType}");
-
-            using var snsPublishActivity = Activity.Current.Source.StartActivity("SNSPublish");
-
-            await this._snsClient.PublishAsync(new PublishRequest()
-            {
-                Message = JsonSerializer.Serialize(new MessageWrapper<ProductDTO>() {Data = productData}),
-                TopicArn = topicName,
-                MessageAttributes = new Dictionary<string, MessageAttributeValue>(1)
+                switch (record.EventName.ToString())
                 {
-                    {
-                        "EVENT_TYPE",
-                        new MessageAttributeValue() {StringValue = eventType, DataType = "String"}
-                    }
+                    case "INSERT":
+                        var insertRecordAsDocument = Document.FromAttributeMap(record.Dynamodb.NewImage);
+                        topicName = CREATED_TOPIC_ARN;
+                        eventType = "product-created";
+                        productData =
+                            new ProductDTO(
+                                DynamoDbProductAdapter.DynamoDbItemToProduct(insertRecordAsDocument.ToAttributeMap()));
+                        break;
+                    case "MODIFY":
+                        var updateRecordAsDocument = Document.FromAttributeMap(record.Dynamodb.NewImage);
+                        topicName = UPDATED_TOPIC_ARN;
+                        eventType = "product-updated";
+                        productData =
+                            new ProductDTO(
+                                DynamoDbProductAdapter.DynamoDbItemToProduct(updateRecordAsDocument.ToAttributeMap()));
+                        break;
+                    case "REMOVE":
+                        var deleteRecordAsDocument = Document.FromAttributeMap(record.Dynamodb.OldImage);
+                        topicName = DELETED_TOPIC_ARN;
+                        eventType = "product-deleted";
+                        productData =
+                            new ProductDTO(
+                                DynamoDbProductAdapter.DynamoDbItemToProduct(deleteRecordAsDocument.ToAttributeMap()));
+                        break;
                 }
-            });
 
-            span.Dispose();
+                if (string.IsNullOrEmpty(topicName))
+                {
+                    documentAttributeMapping.RecordException(new Exception("Topic is not found"));
+
+                    this._loggingService.LogWarning("Invalid event type");
+
+                    return;
+                }
+
+                documentAttributeMapping.Dispose();
+
+                this._loggingService.LogInfo($"Publishing event data to {topicName} with type {eventType}");
+
+                using var snsPublishActivity = Activity.Current.Source.StartActivity("SNSPublish");
+
+                await this._snsClient.PublishAsync(new PublishRequest()
+                {
+                    Message = JsonSerializer.Serialize(new MessageWrapper<ProductDTO>() {Data = productData}),
+                    TopicArn = topicName,
+                    MessageAttributes = new Dictionary<string, MessageAttributeValue>(1)
+                    {
+                        {
+                            "EVENT_TYPE",
+                            new MessageAttributeValue() {StringValue = eventType, DataType = "String"}
+                        }
+                    }
+                });
+            }
         }
 
         public override string SERVICE_NAME => "DynamoDbStreamHandler";

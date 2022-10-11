@@ -3,6 +3,7 @@ using System.Text.Json;
 using Amazon.Lambda.Core;
 using Amazon.Lambda.SQSEvents;
 using ApplicationIntegrationPatterns.Implementations.Models;
+using AWS.Lambda.Powertools.Logging;
 using Shared.Messaging;
 
 namespace Shared;
@@ -39,14 +40,16 @@ public abstract class SqsTracedFunction<TResponse> : BatchTracedFunction<SQSEven
         return true;
     }
 
-    public async Task<string> FunctionHandler(SQSEvent evt, ILambdaContext context)
+    public async Task<TResponse> FunctionHandler(SQSEvent evt, ILambdaContext context)
     {
+        Logger.LogInformation($"Processing message batch {evt.Records.Count}");
+        
         foreach (var record in evt.Records)
         {
             await this.HandleMessage(record, context);
         }
 
-        return "OK";
+        return default;
     }
 
     public ActivityContext HydrateContextFromSnsMessage(SQSEvent.SQSMessage message)

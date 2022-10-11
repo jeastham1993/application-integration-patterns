@@ -52,13 +52,13 @@ public abstract class DynamoDbStreamTracedFunction<TResponse> : BatchTracedFunct
         return hydratedContext;
     }
 
-    public async Task<string> FunctionHandler(DynamoDBEvent dynamoStreamEvent, ILambdaContext context)
+    public async Task<TResponse> FunctionHandler(DynamoDBEvent dynamoStreamEvent, ILambdaContext context)
     {
         foreach (var evt in dynamoStreamEvent.Records)
         {
             await this.HandleMessage(evt, context);
         }
 
-        return "OK";
+        return default;
     }
 }
