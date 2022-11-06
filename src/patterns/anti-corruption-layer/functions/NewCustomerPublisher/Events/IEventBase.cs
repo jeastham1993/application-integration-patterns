@@ -2,9 +2,9 @@ using System;
 
 namespace NewCustomerPublisher.Events;
 
-public abstract class EventBase
+public interface IEventBase
 {
-    public abstract string EventName { get; }
+    string EventName { get; }
 
-    public string Source => $"/product-service/{Environment.GetEnvironmentVariable("dev")}";
+    string Source => $"/product-service/{Environment.GetEnvironmentVariable("dev")}";
 }
