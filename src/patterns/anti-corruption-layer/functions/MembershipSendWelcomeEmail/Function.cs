@@ -1,25 +1,29 @@
+using System.Text.Json;
 using System.Threading.Tasks;
-using Amazon.Lambda.CloudWatchEvents;
 using Amazon.Lambda.Core;
-using AWS.Lambda.Powertools.Logging;
+using Amazon.Lambda.SNSEvents;
 using AWS.Lambda.Powertools.Tracing;
-using MembershipSendWelcomeEmail.Events;
+using Membership.Shared;
 
 namespace MembershipSendWelcomeEmail
 {
+    
     public class Function
     {
         [Tracing]
-        public async Task FunctionHandler(CloudWatchEvent<NewCustomerCreatedEvent> inputEvent, ILambdaContext context)
+        public async Task FunctionHandler(SNSEvent inputEvent, ILambdaContext context)
         {
-            Logger.LogInformation($"Received event for {inputEvent.Detail.CustomerId}");
-            
-            var member = new Member()
+            foreach (var snsEvent in inputEvent.Records)
             {
-                MemberId = inputEvent.Detail.CustomerId
-            };
+                var evtPayload = JsonSerializer.Deserialize<NewCustomerCreatedEventReceived>(snsEvent.Sns.Message);
+                
+                var member = new Member()
+                {
+                    MemberId = evtPayload.MemberCustomerId
+                };
             
-            member.SendWelcomeEmail();
+                member.SendWelcomeEmail();
+            }
         }
     }
 }

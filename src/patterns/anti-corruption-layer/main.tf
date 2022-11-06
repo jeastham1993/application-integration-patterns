@@ -6,10 +6,6 @@ module "eventbridge" {
   }
 }
 
-resource "aws_sns_topic" "membership-sns-topic" {
-  name = var.topic_name
-}
-
 # Create S3 bucket to store our application source code.
 resource "aws_s3_bucket" "lambda_bucket" {
   bucket = var.code_bucket_name
@@ -22,7 +18,7 @@ resource "aws_s3_bucket" "lambda_bucket" {
 module "iam_policies" {
   source         = "./modules/iam-policies"
   event_bus_name = var.event_bus_name
-  topic_name     = var.topic_name
+  topic_name     = "dev-membership-customer-created-event-received-topic"
 }
 
 module "api_gateway" {
@@ -33,7 +29,7 @@ module "api_gateway" {
 }
 
 ###############################################################################
-##                                Event Bridge    
+##                                Customer Service    
 ###############################################################################
 
 module "event_bridge_publisher_lambda" {
@@ -65,6 +61,116 @@ resource "aws_iam_role_policy_attachment" "event_publisher_function_put_events" 
   policy_arn = module.iam_policies.event_bridge_put_events.arn
 }
 
+###############################################################################
+##                                Membership Service    
+###############################################################################
+
+resource "aws_sns_topic" "membership_sns_topic" {
+  name = "dev-membership-customer-created-event-received-topic"
+}
+
+resource "aws_sqs_queue" "customer_created_event_received_queue" {
+  name                      = "dev-membership-customer-created-event-recevied"
+  tags = {
+    Environment = "dev"
+  }
+}
+
+resource "aws_cloudwatch_event_rule" "customer_created_event_rule" {
+  event_bus_name = var.event_bus_name
+  name = "dev-membership-customer-created-event"
+  event_pattern          = <<EOF
+{
+  "detail-type": [
+    "customer-created"
+  ]
+}
+EOF
+}
+
+resource "aws_sqs_queue_policy" "customer_created_event_received_queue_policy" {
+  queue_url = aws_sqs_queue.customer_created_event_received_queue.id
+  policy    = <<POLICY
+{
+  "Version": "2012-10-17",
+  "Id": "sqspolicy",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Principal": {
+        "Service": "events.amazonaws.com"
+      },
+      "Action": "sqs:SendMessage",
+      "Resource": "${aws_sqs_queue.customer_created_event_received_queue.arn}",
+      "Condition": {
+        "ArnEquals": {
+          "aws:SourceArn": "${aws_cloudwatch_event_rule.customer_created_event_rule.arn}"
+        }
+      }
+    }
+  ]
+}
+POLICY
+}
+
+# Set the SQS as a target to the EventBridge Rule
+resource "aws_cloudwatch_event_target" "customer_created_sqs_target" {
+  event_bus_name = var.event_bus_name
+  rule = aws_cloudwatch_event_rule.customer_created_event_rule.name
+  arn  = aws_sqs_queue.customer_created_event_received_queue.arn
+}
+
+module "membership_customer_created_event_adapter" {
+  source           = "./modules/lambda-function"
+  lambda_bucket_id = aws_s3_bucket.lambda_bucket.id
+  publish_dir      = "${path.module}/functions/MembershipCustomerCreatedAdapter/bin/Release/net6.0/linux-x64/publish"
+  zip_file         = "MembershipCustomerCreatedAdapter.zip"
+  function_name    = "MembershipCustomerCreatedAdapter"
+  lambda_handler   = "MembershipCustomerCreatedAdapter::MembershipCustomerCreatedAdapter.Function::FunctionHandler"
+  environment_variables = {
+    "ENVIRONMENT"             = "dev"
+    "POWERTOOLS_SERVICE_NAME" = "com.membership.service"
+    "TOPIC_ARN"               = aws_sns_topic.membership_sns_topic.arn
+  }
+}
+
+resource "aws_lambda_event_source_mapping" "customer_created_queue_event_source" {
+  event_source_arn = aws_sqs_queue.customer_created_event_received_queue.arn
+  function_name    = module.membership_customer_created_event_adapter.function_arn
+}
+
+resource "aws_iam_policy" "allow_sqs_permissions" {
+  name        = "AllowSqsPermissions"
+
+  policy = <<EOF
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Sid": "AllowSQSFromLambda",
+            "Effect": "Allow",
+            "Action": [
+              "sqs:ReceiveMessage",
+              "sqs:DeleteMessage",
+              "sqs:GetQueueAttributes"
+            ],
+            "Resource": "*"
+        }
+    ]
+}
+EOF
+}
+
+resource "aws_iam_role_policy_attachment" "allow_sqs_from_lambda" {
+  role       = module.membership_customer_created_event_adapter.function_role_name
+  policy_arn = aws_iam_policy.allow_sqs_permissions.arn
+}
+
+resource "aws_iam_role_policy_attachment" "sns_publisher_function_sns_publish" {
+  role       = module.membership_customer_created_event_adapter.function_role_name
+  policy_arn = module.iam_policies.sns_publish.arn
+}
+
 module "membership_assign_points_lambda" {
   source           = "./modules/lambda-function"
   lambda_bucket_id = aws_s3_bucket.lambda_bucket.id
@@ -79,19 +185,18 @@ module "membership_assign_points_lambda" {
   }
 }
 
-module "membership_assign_points_event_target" {
-  source                 = "./modules/event-bridge-lambda-target"
-  event_bridge_name      = module.eventbridge.eventbridge_bus_name
-  event_bridge_rule_name = "product_created"
-  lambda_function_name   = module.membership_assign_points_lambda.function_name
-  lambda_function_arn    = module.membership_assign_points_lambda.function_arn
-  event_pattern          = <<EOF
-{
-  "detail-type": [
-    "customer-created"
-  ]
+resource "aws_lambda_permission" "assign_points_allow_sns" {
+  action        = "lambda:InvokeFunction"
+  function_name = module.membership_assign_points_lambda.function_name
+  principal     = "sns.amazonaws.com"
+  statement_id  = "AllowSubscriptionToSNS"
+  source_arn    = aws_sns_topic.membership_sns_topic.arn
 }
-EOF
+
+resource "aws_sns_topic_subscription" "assign_points_subscription" {
+  endpoint  = module.membership_assign_points_lambda.function_arn
+  protocol  = "lambda"
+  topic_arn = aws_sns_topic.membership_sns_topic.arn
 }
 
 module "membership_update_analytics_lambda" {
@@ -108,19 +213,18 @@ module "membership_update_analytics_lambda" {
   }
 }
 
-module "membership_update_analytics_event_target" {
-  source                 = "./modules/event-bridge-lambda-target"
-  event_bridge_name      = module.eventbridge.eventbridge_bus_name
-  event_bridge_rule_name = "product_created"
-  lambda_function_name   = module.membership_update_analytics_lambda.function_name
-  lambda_function_arn    = module.membership_update_analytics_lambda.function_arn
-  event_pattern          = <<EOF
-{
-  "detail-type": [
-    "customer-created"
-  ]
+resource "aws_lambda_permission" "update_analytics_allow_sns" {
+  action        = "lambda:InvokeFunction"
+  function_name = module.membership_update_analytics_lambda.function_name
+  principal     = "sns.amazonaws.com"
+  statement_id  = "AllowSubscriptionToSNS"
+  source_arn    = aws_sns_topic.membership_sns_topic.arn
 }
-EOF
+
+resource "aws_sns_topic_subscription" "update_analytics_subscription" {
+  endpoint  = module.membership_update_analytics_lambda.function_arn
+  protocol  = "lambda"
+  topic_arn = aws_sns_topic.membership_sns_topic.arn
 }
 
 module "membership_send_welcome_email_lambda" {
@@ -137,17 +241,16 @@ module "membership_send_welcome_email_lambda" {
   }
 }
 
-module "membership_send_welcome_email_event_target" {
-  source                 = "./modules/event-bridge-lambda-target"
-  event_bridge_name      = module.eventbridge.eventbridge_bus_name
-  event_bridge_rule_name = "product_created"
-  lambda_function_name   = module.membership_send_welcome_email_lambda.function_name
-  lambda_function_arn    = module.membership_send_welcome_email_lambda.function_arn
-  event_pattern          = <<EOF
-{
-  "detail-type": [
-    "customer-created"
-  ]
+resource "aws_lambda_permission" "send_welcome_email_allow_sns" {
+  action        = "lambda:InvokeFunction"
+  function_name = module.membership_send_welcome_email_lambda.function_name
+  principal     = "sns.amazonaws.com"
+  statement_id  = "AllowSubscriptionToSNS"
+  source_arn    = aws_sns_topic.membership_sns_topic.arn
 }
-EOF
+
+resource "aws_sns_topic_subscription" "welcome_email_subscription" {
+  endpoint  = module.membership_send_welcome_email_lambda.function_arn
+  protocol  = "lambda"
+  topic_arn = aws_sns_topic.membership_sns_topic.arn
 }

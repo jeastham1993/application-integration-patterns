@@ -1,4 +1,4 @@
-namespace MembershipSendWelcomeEmail.Events;
+namespace MembershipCustomerCreatedAdapter.Events;
 
 public class NewCustomerCreatedEvent
 {

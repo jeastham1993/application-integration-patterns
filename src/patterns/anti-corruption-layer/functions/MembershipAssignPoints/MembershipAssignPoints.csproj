@@ -7,12 +7,16 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Amazon.Lambda.CloudWatchEvents" Version="4.0.0" />
     <PackageReference Include="Amazon.Lambda.Core" Version="2.1.0" />
     <PackageReference Include="Amazon.Lambda.Serialization.SystemTextJson" Version="2.2.0" />
+    <PackageReference Include="Amazon.Lambda.SNSEvents" Version="2.0.0" />
     <PackageReference Include="AWS.Lambda.Powertools.Logging" Version="0.0.1-preview.1" />
     <PackageReference Include="AWS.Lambda.Powertools.Tracing" Version="0.0.1-preview.1" />
     <PackageReference Include="AWSXRayRecorder" Version="2.11.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Membership.Shared\Membership.Shared.csproj" />
   </ItemGroup>
 </Project>
 
