@@ -2,7 +2,49 @@
 
 Implementations of application integration patterns using AWS technologies. Deployed with Terraform.
 
+## Deploying Patterns
+
+### Prerequisites
+
+- [.NET 6](https://dotnet.microsoft.com/en-us/download/dotnet/6.0)
+- [Terraform](https://developer.hashicorp.com/terraform/tutorials/aws-get-started/install-cli)
+- An active AWS account
+
+### Deploying
+
+All patterns are built using Terraform. To deploy into your own AWS account navigate into the folder of your choice and run either the deploy.ps1 or deploy.sh scripts depending on your OS.
+
+```powershell
+cd src\patterns\anti-corruption-layer
+deploy.ps1
+```
+
+```bash
+cd src/patterns/anti-corruption-layer
+deploy.sh
+```
+
+The deployment script will first compile the .NET applications and then run a terraform apply command to deploy the required resources.
+
 ## Patterns
+
+### [Anti Corruption Layers](./src/patterns/anti-corruption-layer/)
+
+An implementation of the anti-corruption layer using Amazon EventBridge, Amazon SQS and Amazon SNS.
+
+![](./assets/acl.png)
+
+1. POST /customer request comes into API Gateway. Lambda function takes the request, creates the customer and publishes a CustomerCreatedEvent to Amazon EventBridge.
+
+```json
+{
+  "EmailAddress": "test@test.com",
+  "Name": "James"
+}
+```
+2. The Membership service defines a rule on EventBridge to route CustomerCreated events to an SQS target
+3. A Lambda function acting as an anti-corruption layer takes the event from the customer service, adapts that to be an event the membership service understands and publishes to an SNS topic owned by the membership team
+4. Event is fanned out to various Lambda functions performing different jobs
 
 ### [Scatter Gather](./src/patterns/scatter-gather/)
 
