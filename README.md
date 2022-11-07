@@ -2,6 +2,10 @@
 
 Implementations of application integration patterns using AWS technologies. Deployed with Terraform.
 
+## Video Walkthroughts
+
+All the sample patterns in this repository have a corresponding walkthrough video on my YouTube channel. There's even a [playlist](https://www.youtube.com/watch?v=lttsFZV__Wo&list=PLCOG9xkUD90IDUehC4Ws9fLYyD4i0WBE4) to group them all together.
+
 ## Deploying Patterns
 
 ### Prerequisites
@@ -29,6 +33,8 @@ The deployment script will first compile the .NET applications and then run a te
 ## Patterns
 
 ### [Anti Corruption Layers](./src/patterns/anti-corruption-layer/)
+
+[Video](https://youtu.be/5twczseztR0)
 
 An implementation of the anti-corruption layer using Amazon EventBridge, Amazon SQS and Amazon SNS.
 
@@ -68,12 +74,15 @@ An implementation of the scatter gather pattern using an aggregator to combine r
 
 ### [Pub/Sub](./src/patterns/pub-sub/)
 
+[Video](https://youtu.be/lttsFZV__Wo)
+
 An implementation of the publish/subscribe pattern, using both Amazon Event Bridge and AWS SNS as the message channel.
 
 ![](./assets/patterns-pub-sub.png)
 
-
 ### [Synchronous API](./src/patterns/synchronous-api/)
+
+[Video](https://youtu.be/lttsFZV__Wo)
 
 Implementation of a simple REST API that allows the creation and retrieval of products.
 
